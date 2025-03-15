@@ -1,3 +1,4 @@
+import './styles'; // Import styles so webpack can process them
 import { MODEL_INFO } from './models';
 import { Conversation } from './conversation';
 import { loadTemplate, getAvailableTemplates, saveCustomTemplate, getCustomTemplate, clearCustomTemplate } from './templates';
@@ -213,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         text = customTemplate.content;
       } else {
         // Load built-in template
-        const response = await fetch(`./templates/${templateName}.jsonl`);
+        const response = await fetch(`./public/templates/${templateName}.jsonl`);
         if (!response.ok) {
           throw new Error(`Template '${templateName}' not found.`);
         }
@@ -638,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         } else {
           // Load built-in template
-          const response = await fetch(`./templates/${currentTemplate}.jsonl`);
+          const response = await fetch(`./public/templates/${currentTemplate}.jsonl`);
           if (!response.ok) {
             throw new Error(`Template '${currentTemplate}' not found.`);
           }

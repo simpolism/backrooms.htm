@@ -33,7 +33,7 @@ export async function loadTemplate(
       text = customTemplate.content;
     } else {
       // Load built-in template
-      const response = await fetch(`./templates/${templateName}.jsonl`);
+      const response = await fetch(`./public/templates/${templateName}.jsonl`);
       if (!response.ok) {
         throw new Error(`Template '${templateName}' not found.`);
       }
@@ -113,7 +113,7 @@ export async function getAvailableTemplates(): Promise<string[]> {
   try {
     // In a browser environment, we'd typically have a predefined list or fetch from an API
     // This is a simplified version that could be expanded with backend support
-    const response = await fetch('./templates/index.json');
+    const response = await fetch('./public/templates/index.json');
     if (!response.ok) {
       throw new Error('Could not fetch template list');
     }
