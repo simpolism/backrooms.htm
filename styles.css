@@ -286,6 +286,10 @@ input:checked + .toggle-slider:before {
 }
 
 /* Template Editor Styles */
+.template-editor {
+  margin-bottom: 20px;
+}
+
 .template-editor-controls {
   display: flex;
   gap: 10px;
