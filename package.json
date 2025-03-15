@@ -1,0 +1,21 @@
+{
+  "name": "ai-conversation-interface",
+  "version": "1.0.0",
+  "description": "Interface for AI model conversations",
+  "main": "dist/bundle.js",
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack serve --mode development",
+    "start": "webpack serve --mode development --open"
+  },
+  "dependencies": {
+    "core-js": "^3.36.0"
+  },
+  "devDependencies": {
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}

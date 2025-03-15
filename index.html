@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Conversation Interface</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI Conversation Interface</h1>
+    </header>
+    
+    <div class="settings-panel">
+      <div class="api-keys">
+        <h2>API Keys</h2>
+        <div class="input-group">
+          <label for="anthropic-key">Anthropic API Key:</label>
+          <input type="password" id="anthropic-key" placeholder="Enter Anthropic API Key">
+        </div>
+        <div class="input-group">
+          <label for="openai-key">OpenAI API Key:</label>
+          <input type="password" id="openai-key" placeholder="Enter OpenAI API Key">
+        </div>
+        <div class="input-group">
+          <label for="hyperbolic-key">Hyperbolic API Key:</label>
+          <input type="password" id="hyperbolic-key" placeholder="Enter Hyperbolic API Key">
+        </div>
+        <div class="input-group">
+          <label for="world-interface-key">World Interface Key:</label>
+          <input type="password" id="world-interface-key" placeholder="Enter World Interface Key">
+        </div>
+      </div>
+      
+      <div class="model-selection">
+        <h2>Models</h2>
+        <div id="model-inputs" class="model-inputs">
+          <div class="model-input-group">
+            <label for="model-0">Model 1:</label>
+            <select id="model-0" class="model-select"></select>
+          </div>
+          <div class="model-input-group">
+            <label for="model-1">Model 2:</label>
+            <select id="model-1" class="model-select"></select>
+          </div>
+        </div>
+        <button id="add-model">Add Model</button>
+      </div>
+      
+      <div class="template-selection">
+        <h2>Template</h2>
+        <select id="template-select"></select>
+        <input type="number" id="max-turns" placeholder="Max turns (default: infinity)" min="1">
+      </div>
+      
+      <button id="start-conversation" class="primary-button">Start Conversation</button>
+    </div>
+    
+    <div class="conversation-container">
+      <div id="conversation-output" class="conversation-output"></div>
+    </div>
+  </div>
+  
+  <script src="dist/bundle.js"></script>
+</body>
+</html>
