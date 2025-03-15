@@ -19,21 +19,11 @@ export async function loadTemplate(
     const actors: string[] = [];
     
     for (let i = 0; i < models.length; i++) {
-      if (models[i].toLowerCase() === 'cli') {
-        companies.push('CLI');
-        actors.push('CLI');
-      } else {
-        companies.push(MODEL_INFO[models[i]].company);
-        actors.push(`${MODEL_INFO[models[i]].display_name} ${i+1}`);
-      }
+      companies.push(MODEL_INFO[models[i]].company);
+      actors.push(`${MODEL_INFO[models[i]].display_name} ${i+1}`);
     }
     
     for (let i = 0; i < configs.length; i++) {
-      if (models[i].toLowerCase() === 'cli') {
-        configs[i].cli = true;
-        continue;
-      }
-      
       // Format system prompts and context with actor and company names
       if (configs[i].system_prompt) {
         let formattedPrompt = configs[i].system_prompt;
@@ -83,8 +73,6 @@ export async function loadTemplate(
           });
         }
       }
-      
-      configs[i].cli = configs[i].cli || false;
     }
     
     return configs;
@@ -108,6 +96,6 @@ export async function getAvailableTemplates(): Promise<string[]> {
   } catch (error) {
     console.error('Error fetching templates:', error);
     // Return a default template if fetch fails
-    return ['cli'];
+    return ['example'];
   }
 }

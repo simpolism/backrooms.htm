@@ -5,7 +5,6 @@ import {
   gpt4Conversation,
   hyperbolicConversation,
   hyperbolicCompletionConversation,
-  cliConversation
 } from './api';
 
 export function generateModelResponse(
@@ -24,7 +23,7 @@ export function generateModelResponse(
       apiKeys.anthropicApiKey
     );
   } else if (model.startsWith('meta-llama/Meta-Llama-3.1-405B-Instruct')) {
-    return hyperbolicConversation(
+    return hyperbolicCompletionConversation(
       actor,
       model,
       context,
@@ -78,11 +77,7 @@ export class Conversation {
     
     // Generate model display names
     this.modelDisplayNames = models.map((model, index) => {
-      if (model.toLowerCase() === 'cli') {
-        return 'CLI';
-      } else {
-        return `${MODEL_INFO[model].display_name} ${index + 1}`;
-      }
+      return `${MODEL_INFO[model].display_name} ${index + 1}`;
     });
   }
 
@@ -112,20 +107,13 @@ export class Conversation {
       let response: string;
       
       try {
-        if (this.models[i].toLowerCase() === 'cli') {
-          response = await cliConversation(
-            this.contexts[i],
-            this.apiKeys.worldInterfaceKey
-          );
-        } else {
-          response = await generateModelResponse(
-            MODEL_INFO[this.models[i]].api_name,
-            this.modelDisplayNames[i],
-            this.contexts[i],
-            this.systemPrompts[i],
-            this.apiKeys
-          );
-        }
+        response = await generateModelResponse(
+          MODEL_INFO[this.models[i]].api_name,
+          this.modelDisplayNames[i],
+          this.contexts[i],
+          this.systemPrompts[i],
+          this.apiKeys
+        );
         
         // Process the response
         this.outputCallback(this.modelDisplayNames[i], response);

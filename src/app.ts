@@ -39,13 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const anthropicKeyInput = document.getElementById('anthropic-key') as HTMLInputElement;
   const openaiKeyInput = document.getElementById('openai-key') as HTMLInputElement;
   const hyperbolicKeyInput = document.getElementById('hyperbolic-key') as HTMLInputElement;
-  const worldInterfaceKeyInput = document.getElementById('world-interface-key') as HTMLInputElement;
 
   // Load saved API keys if available
   anthropicKeyInput.value = loadFromLocalStorage('anthropicApiKey', '');
   openaiKeyInput.value = loadFromLocalStorage('openaiApiKey', '');
   hyperbolicKeyInput.value = loadFromLocalStorage('hyperbolicApiKey', '');
-  worldInterfaceKeyInput.value = loadFromLocalStorage('worldInterfaceKey', '');
   
   // Load saved font size and word wrap settings
   const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
@@ -64,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
   anthropicKeyInput.addEventListener('change', () => saveToLocalStorage('anthropicApiKey', anthropicKeyInput.value));
   openaiKeyInput.addEventListener('change', () => saveToLocalStorage('openaiApiKey', openaiKeyInput.value));
   hyperbolicKeyInput.addEventListener('change', () => saveToLocalStorage('hyperbolicApiKey', hyperbolicKeyInput.value));
-  worldInterfaceKeyInput.addEventListener('change', () => saveToLocalStorage('worldInterfaceKey', worldInterfaceKeyInput.value));
   
   // Font size control event handlers
   decreaseFontSizeBtn.addEventListener('click', () => {
@@ -182,13 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Populate a single model select
   function populateModelSelect(select: HTMLSelectElement, index?: number) {
     select.innerHTML = '';
-    
-    // Add CLI option
-    const cliOption = document.createElement('option');
-    cliOption.value = 'cli';
-    cliOption.textContent = 'CLI';
-    select.appendChild(cliOption);
-    
+
     // Add model options
     Object.keys(MODEL_INFO).forEach(modelKey => {
       const option = document.createElement('option');
@@ -352,18 +343,12 @@ document.addEventListener('DOMContentLoaded', () => {
       anthropicApiKey: anthropicKeyInput.value,
       openaiApiKey: openaiKeyInput.value,
       hyperbolicApiKey: hyperbolicKeyInput.value,
-      worldInterfaceKey: worldInterfaceKeyInput.value
     };
     
     // Validate required API keys
     const requiredApis: Record<string, string> = {};
     
     for (const model of models) {
-      if (model.toLowerCase() === 'cli') {
-        requiredApis['worldInterfaceKey'] = 'World Interface Key';
-        continue;
-      }
-      
       const company = MODEL_INFO[model].company;
       if (company === 'anthropic') {
         requiredApis['anthropicApiKey'] = 'Anthropic API Key';

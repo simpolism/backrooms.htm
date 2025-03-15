@@ -12,7 +12,6 @@ export interface Message {
 export interface TemplateConfig {
   system_prompt: string;
   context: Message[];
-  cli?: boolean;
 }
 
 export interface ApiClients {
@@ -30,5 +29,4 @@ export interface ApiKeys {
   anthropicApiKey: string;
   openaiApiKey: string;
   hyperbolicApiKey: string;
-  worldInterfaceKey: string;
 }
