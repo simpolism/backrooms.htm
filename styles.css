@@ -133,9 +133,6 @@ button:active {
 /* Output settings styles */
 .output-settings {
   margin-bottom: 15px;
-  border: 1px solid #000000;
-  padding: 10px;
-  background-color: #EEEEEE;
 }
 
 .output-setting-group {
@@ -283,14 +280,16 @@ input:checked + .toggle-slider:before {
   padding-bottom: 0;
 }
 
-/* Remove animation for API keys and template editor dropdowns */
+/* Remove animation for API keys, template editor, and output settings dropdowns */
 .api-keys .collapsible-content,
-.template-editor .collapsible-content {
+.template-editor .collapsible-content,
+.output-settings .collapsible-content {
   transition: none;
 }
 
 .api-keys .collapse-indicator,
-.template-editor .collapse-indicator {
+.template-editor .collapse-indicator,
+.output-settings .collapse-indicator {
   transition: none;
 }
 

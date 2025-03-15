@@ -27,9 +27,42 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize collapsible sections
   const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
   collapsibleHeaders.forEach(header => {
+    const section = header.closest('.collapsible-section');
+    if (!section) return;
+    
+    // Get section ID or create one based on its content
+    const sectionId = section.id ||
+      header.querySelector('h2')?.textContent?.toLowerCase().replace(/\s+/g, '-') ||
+      'section-' + Math.random().toString(36).substring(2, 9);
+    
+    // Set ID if not already set
+    if (!section.id) {
+      section.id = sectionId;
+    }
+    
+    // Load saved collapse state
+    const savedState = loadFromLocalStorage(`collapse-${sectionId}`, null);
+    if (savedState !== null) {
+      if (savedState === 'true') {
+        section.classList.add('collapsed');
+      } else {
+        section.classList.remove('collapsed');
+      }
+    } else {
+      // Set default states for sections
+      if (sectionId === 'output-settings' || sectionId === 'api-keys') {
+        // Output settings and API keys should be open by default
+        section.classList.remove('collapsed');
+      } else if (sectionId === 'template-editor') {
+        // Template editor should be closed by default
+        section.classList.add('collapsed');
+      }
+    }
+    
     header.addEventListener('click', () => {
-      const section = header.closest('.collapsible-section');
-      section?.classList.toggle('collapsed');
+      section.classList.toggle('collapsed');
+      // Save collapse state
+      saveToLocalStorage(`collapse-${sectionId}`, section.classList.contains('collapsed').toString());
     });
   });
   
