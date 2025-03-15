@@ -79,7 +79,7 @@ button:active {
 }
 
 .primary-button {
-  background-color: #CCCCCC;
+  background-color: #4CAF50;  /* Changed to green */
   display: block;
   width: 100%;
   padding: 5px;
