@@ -4,8 +4,6 @@ This repo replicates Scott Viteri's "Universal Backrooms" (https://github.com/sc
 
 **I know it's insecure to put your API keys in a browser, so use at your own risk.**
 
-I recommend using openrouter over the other options because it doesn't have the same rate limits. But using Hyperbolic's 405b-base model is really fun!
-
 ## Usage
 
 To run locally, first install packages with `pnpm i` then run the development server with `pnpm start`.
