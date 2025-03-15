@@ -1,7 +1,7 @@
 {
   "name": "backrooms.directory",
   "version": "1.0.0",
-  "description": "The AIs shall explore the backrooms together",
+  "description": "In which the AIs explore the backrooms together.",
   "main": "dist/bundle.js",
   "scripts": {
     "build": "webpack --mode production",
