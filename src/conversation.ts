@@ -124,7 +124,7 @@ export class Conversation {
     
     this.outputCallback(
       'System',
-      `\nConversation ended.`
+      `Conversation ended.`
     );
   }
 
@@ -157,7 +157,7 @@ export class Conversation {
         
         // Check for conversation end signal
         if (response.includes('^C^C')) {
-          const endMessage = `\n${this.modelDisplayNames[i]} has ended the conversation with ^C^C.`;
+          const endMessage = `${this.modelDisplayNames[i]} has ended the conversation with ^C^C.`;
           this.outputCallback('System', endMessage);
           this.stop();
           return;
