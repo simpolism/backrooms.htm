@@ -542,8 +542,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       templates.forEach(template => {
         const option = document.createElement('option');
-        option.value = template;
-        option.textContent = template;
+        option.value = template.name;
+        // Show both name and description in the dropdown
+        option.textContent = template.description ?
+          `${template.name} - ${template.description}` :
+          template.name;
         templateSelect.appendChild(option);
       });
       
@@ -552,7 +555,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (customTemplate) {
         const customOption = document.createElement('option');
         customOption.value = 'custom';
-        customOption.textContent = `Custom: ${customTemplate.name}`;
+        // Show both name and description for custom template
+        customOption.textContent = customTemplate.description ?
+          `Custom: ${customTemplate.name} - ${customTemplate.description}` :
+          `Custom: ${customTemplate.name}`;
         templateSelect.appendChild(customOption);
       }
       
@@ -612,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const templateFileInput = document.getElementById('template-file-input') as HTMLInputElement;
     const templateEditorForm = document.getElementById('template-editor-form') as HTMLDivElement;
     const templateNameInput = document.getElementById('template-name') as HTMLInputElement;
+    const templateDescriptionInput = document.getElementById('template-description') as HTMLInputElement;
     const templateContentTextarea = document.getElementById('template-content') as HTMLTextAreaElement;
     const saveTemplateBtn = document.getElementById('save-template') as HTMLButtonElement;
     const exportTemplateBtn = document.getElementById('export-template') as HTMLButtonElement;
@@ -642,13 +649,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!customOptionExists) {
           const customOption = document.createElement('option');
           customOption.value = 'custom';
-          customOption.textContent = `Custom: ${customTemplate.name}`;
+          // Show both name and description
+          customOption.textContent = customTemplate.description ?
+            `Custom: ${customTemplate.name} - ${customTemplate.description}` :
+            `Custom: ${customTemplate.name}`;
           templateSelect.appendChild(customOption);
         } else {
           // Update the text of the custom option
           for (let i = 0; i < templateSelect.options.length; i++) {
             if (templateSelect.options[i].value === 'custom') {
-              templateSelect.options[i].textContent = `Custom: ${customTemplate.name}`;
+              // Show both name and description
+              templateSelect.options[i].textContent = customTemplate.description ?
+                `Custom: ${customTemplate.name} - ${customTemplate.description}` :
+                `Custom: ${customTemplate.name}`;
               break;
             }
           }
@@ -673,6 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         let templateContent: string;
         let templateName: string;
+        let templateDescription: string = '';
         
         if (currentTemplate === 'custom') {
           // Edit existing custom template
@@ -680,6 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (customTemplate) {
             templateContent = customTemplate.content;
             templateName = customTemplate.name;
+            templateDescription = customTemplate.description || '';
           } else {
             throw new Error('Custom template not found');
           }
@@ -691,10 +706,18 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           templateContent = await response.text();
           templateName = `${currentTemplate} (Custom)`;
+          
+          // Try to get description from available templates
+          const templates = await getAvailableTemplates();
+          const templateInfo = templates.find(t => t.name === currentTemplate);
+          if (templateInfo) {
+            templateDescription = templateInfo.description || '';
+          }
         }
         
         // Populate editor form
         templateNameInput.value = templateName;
+        templateDescriptionInput.value = templateDescription;
         templateContentTextarea.value = templateContent;
         
         // Show editor form
@@ -732,6 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // Populate editor form
           templateNameInput.value = file.name.replace('.jsonl', '');
+          templateDescriptionInput.value = ''; // Clear description field for imported templates
           templateContentTextarea.value = content;
           
           // Show editor form
@@ -776,9 +800,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
         
+        // Get description
+        const description = templateDescriptionInput.value.trim();
+        
         // Save custom template
         saveCustomTemplate({
           name,
+          description,
           content,
           originalName: templateSelect.value !== 'custom' ? templateSelect.value : undefined,
           lastModified: Date.now()
@@ -854,6 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelEditBtn.addEventListener('click', () => {
       templateEditorForm.style.display = 'none';
       templateNameInput.value = '';
+      templateDescriptionInput.value = '';
       templateContentTextarea.value = '';
     });
     
@@ -863,6 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (customTemplate) {
         templateNameInput.value = customTemplate.name;
+        templateDescriptionInput.value = customTemplate.description || '';
         templateContentTextarea.value = customTemplate.content;
         templateEditorForm.style.display = 'block';
       }

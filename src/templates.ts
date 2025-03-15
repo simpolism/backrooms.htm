@@ -109,7 +109,12 @@ export async function loadTemplate(
   }
 }
 
-export async function getAvailableTemplates(): Promise<string[]> {
+export interface TemplateInfo {
+  name: string;
+  description: string;
+}
+
+export async function getAvailableTemplates(): Promise<TemplateInfo[]> {
   try {
     // In a browser environment, we'd typically have a predefined list or fetch from an API
     // This is a simplified version that could be expanded with backend support
@@ -119,10 +124,24 @@ export async function getAvailableTemplates(): Promise<string[]> {
     }
     
     const data = await response.json();
-    return data.templates;
+    
+    // Handle both old and new format for backward compatibility
+    if (Array.isArray(data.templates)) {
+      // Old format: just an array of template names
+      return data.templates.map((name: string) => ({
+        name,
+        description: '' // No description available
+      }));
+    } else {
+      // New format: object with template names as keys and descriptions as values
+      return Object.entries(data.templates).map(([name, description]) => ({
+        name,
+        description: description as string
+      }));
+    }
   } catch (error) {
     console.error('Error fetching templates:', error);
     // Return a default template if fetch fails
-    return ['example'];
+    return [{ name: 'example', description: 'Default example template' }];
   }
 }

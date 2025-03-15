@@ -1,3 +1,12 @@
 {
-  "templates": ["cli", "ethics", "fugue", "gallery", "meta-template", "science", "student", "xenoweb_1"]
+  "templates": {
+    "cli": "Terminal emulator simulation for command-line interactions",
+    "ethics": "Ethical dilemma discussion between AI systems",
+    "fugue": "Creative writing exercise with dreamlike narrative",
+    "gallery": "Art critique and visual analysis conversation",
+    "meta-template": "Empty template to start from scratch",
+    "science": "Scientific inquiry and hypothesis exploration",
+    "student": "Educational tutoring and learning assistance",
+    "xenoweb_1": "Alien internet browsing simulation experience"
+  }
 }
