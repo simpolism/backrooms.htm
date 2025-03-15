@@ -79,7 +79,7 @@ export class Conversation {
   private systemPrompts: (string | null)[];
   private contexts: Message[][];
   private apiKeys: ApiKeys;
-  private outputCallback: (actor: string, response: string) => void;
+  private outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void;
   private isRunning: boolean = false;
   private maxTurns: number;
   private currentTurn: number = 0;
@@ -90,7 +90,7 @@ export class Conversation {
     contexts: Message[][],
     apiKeys: ApiKeys,
     maxTurns: number = Infinity,
-    outputCallback: (actor: string, response: string) => void
+    outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void
   ) {
     this.models = models;
     this.systemPrompts = systemPrompts;
@@ -128,10 +128,13 @@ export class Conversation {
     for (let i = 0; i < this.models.length; i++) {
       if (!this.isRunning) break;
       
-      let response: string;
+      // Add loading indicator with actor name and "..."
+      const loadingId = `loading-${Date.now()}-${i}`;
+      this.outputCallback(this.modelDisplayNames[i], "", loadingId, true);
       
       try {
-        response = await generateModelResponse(
+        // Make the API call
+        const response = await generateModelResponse(
           MODEL_INFO[this.models[i]],
           this.modelDisplayNames[i],
           this.contexts[i],
@@ -140,8 +143,8 @@ export class Conversation {
           i // Pass the model index
         );
         
-        // Process the response
-        this.outputCallback(this.modelDisplayNames[i], response);
+        // Replace loading indicator with actual response
+        this.outputCallback(this.modelDisplayNames[i], response, loadingId, false);
         
         // Check for conversation end signal
         if (response.includes('^C^C')) {
@@ -158,9 +161,12 @@ export class Conversation {
         }
       } catch (error) {
         console.error(`Error in turn processing for ${this.modelDisplayNames[i]}:`, error);
+        // Update loading indicator with error message
         this.outputCallback(
           'System',
-          `Error: Failed to get response from ${this.modelDisplayNames[i]}`
+          `Error: Failed to get response from ${this.modelDisplayNames[i]}`,
+          loadingId,
+          false
         );
         this.stop();
       }

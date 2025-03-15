@@ -876,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Add message to conversation output
-  function addOutputMessage(actor: string, content: string) {
+  function addOutputMessage(actor: string, content: string, elementId?: string, isLoading: boolean = false) {
     // Get or assign color for this actor
     if (!actorColors[actor]) {
       actorColors[actor] = getRgbColor(colorGenerator.next());
@@ -886,8 +886,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     
+    // If elementId is provided, try to update existing element
+    if (elementId) {
+      const existingMessage = document.getElementById(elementId);
+      if (existingMessage) {
+        const contentDiv = existingMessage.querySelector('.response-content');
+        if (contentDiv) {
+          if (isLoading) {
+            contentDiv.classList.add('loading-response');
+            contentDiv.textContent = "";  // The dots will be added by CSS
+          } else {
+            contentDiv.classList.remove('loading-response');
+            contentDiv.textContent = content;
+          }
+          // Scroll to bottom
+          conversationOutput.scrollTop = conversationOutput.scrollHeight;
+          return;
+        }
+      }
+    }
+    
+    // Create new message element
     const messageDiv = document.createElement('div');
     messageDiv.className = 'actor-response';
+    if (elementId) {
+      messageDiv.id = elementId;
+    }
     
     const headerDiv = document.createElement('div');
     headerDiv.className = 'actor-header';
@@ -896,7 +920,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const contentDiv = document.createElement('div');
     contentDiv.className = 'response-content';
-    contentDiv.textContent = content;
+    if (isLoading) {
+      contentDiv.classList.add('loading-response');
+      contentDiv.textContent = "";  // The dots will be added by CSS
+    } else {
+      contentDiv.textContent = content;
+    }
     
     messageDiv.appendChild(headerDiv);
     messageDiv.appendChild(contentDiv);
