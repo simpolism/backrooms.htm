@@ -1,17 +1,44 @@
-import { TemplateConfig, Message } from './types';
+import { TemplateConfig, Message, CustomTemplate } from './types';
 import { MODEL_INFO } from './models';
+
+// Custom template storage functions
+export function saveCustomTemplate(template: CustomTemplate): void {
+  localStorage.setItem('customTemplate', JSON.stringify(template));
+}
+
+export function getCustomTemplate(): CustomTemplate | null {
+  const stored = localStorage.getItem('customTemplate');
+  return stored ? JSON.parse(stored) : null;
+}
+
+export function clearCustomTemplate(): void {
+  localStorage.removeItem('customTemplate');
+}
 
 export async function loadTemplate(
   templateName: string,
   models: string[]
 ): Promise<TemplateConfig[]> {
   try {
-    const response = await fetch(`./templates/${templateName}.jsonl`);
-    if (!response.ok) {
-      throw new Error(`Template '${templateName}' not found.`);
-    }
+    let text: string;
     
-    const text = await response.text();
+    // Check if this is the custom template
+    if (templateName === 'custom') {
+      const customTemplate = getCustomTemplate();
+      
+      if (!customTemplate) {
+        throw new Error('Custom template not found.');
+      }
+      
+      text = customTemplate.content;
+    } else {
+      // Load built-in template
+      const response = await fetch(`./templates/${templateName}.jsonl`);
+      if (!response.ok) {
+        throw new Error(`Template '${templateName}' not found.`);
+      }
+      text = await response.text();
+    }
     const lines = text.trim().split('\n');
     const configs: TemplateConfig[] = lines.map(line => JSON.parse(line));
     

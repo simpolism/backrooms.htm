@@ -274,11 +274,85 @@ input:checked + .toggle-slider:before {
   padding-bottom: 0;
 }
 
-/* Remove animation for API keys dropdown */
-.api-keys .collapsible-content {
+/* Remove animation for API keys and template editor dropdowns */
+.api-keys .collapsible-content,
+.template-editor .collapsible-content {
   transition: none;
 }
 
-.api-keys .collapse-indicator {
+.api-keys .collapse-indicator,
+.template-editor .collapse-indicator {
   transition: none;
+}
+
+/* Template Editor Styles */
+.template-editor-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.template-content-editor {
+  margin-bottom: 15px;
+}
+
+.template-content-editor textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 10px;
+  border: 1px solid #000000;
+  border-radius: 4px;
+  resize: vertical;
+  min-height: 200px;
+  background-color: #FFFFFF;
+}
+
+.template-editor-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+#custom-template-status {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #000000;
+}
+
+#custom-template-status p {
+  margin: 0;
+  flex-grow: 1;
+}
+
+#custom-template-name {
+  font-weight: bold;
+}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 768px) {
+  .template-editor-controls {
+    flex-direction: column;
+  }
+  
+  .template-editor-actions {
+    flex-direction: column;
+  }
+  
+  #custom-template-status {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  #custom-template-status button {
+    margin-top: 10px;
+    width: 100%;
+  }
 }

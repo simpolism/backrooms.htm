@@ -1,8 +1,8 @@
 import { MODEL_INFO } from './models';
 import { Conversation } from './conversation';
-import { loadTemplate, getAvailableTemplates } from './templates';
+import { loadTemplate, getAvailableTemplates, saveCustomTemplate, getCustomTemplate, clearCustomTemplate } from './templates';
 import { generateDistinctColors, getRgbColor, saveToLocalStorage, loadFromLocalStorage } from './utils';
-import { ApiKeys } from './types';
+import { ApiKeys, CustomTemplate } from './types';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize UI elements
@@ -126,12 +126,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // Get the number of models from the template file
   async function getTemplateModelCount(templateName: string): Promise<number> {
     try {
-      const response = await fetch(`./templates/${templateName}.jsonl`);
-      if (!response.ok) {
-        throw new Error(`Template '${templateName}' not found.`);
+      let text: string;
+      
+      // Check if this is the custom template
+      if (templateName === 'custom') {
+        const customTemplate = getCustomTemplate();
+        
+        if (!customTemplate) {
+          throw new Error('Custom template not found.');
+        }
+        
+        text = customTemplate.content;
+      } else {
+        // Load built-in template
+        const response = await fetch(`./templates/${templateName}.jsonl`);
+        if (!response.ok) {
+          throw new Error(`Template '${templateName}' not found.`);
+        }
+        text = await response.text();
       }
       
-      const text = await response.text();
       const lines = text.trim().split('\n');
       return lines.length;
     } catch (error) {
@@ -210,9 +224,29 @@ document.addEventListener('DOMContentLoaded', () => {
         templateSelect.appendChild(option);
       });
       
+      // Check if custom template exists and add it to the dropdown
+      const customTemplate = getCustomTemplate();
+      if (customTemplate) {
+        const customOption = document.createElement('option');
+        customOption.value = 'custom';
+        customOption.textContent = `Custom: ${customTemplate.name}`;
+        templateSelect.appendChild(customOption);
+      }
+      
       // Set selected template if available
-      if (savedTemplateSelection && templates.includes(savedTemplateSelection)) {
-        templateSelect.value = savedTemplateSelection;
+      if (savedTemplateSelection) {
+        // Check if the saved selection exists in the options
+        let selectionExists = false;
+        for (let i = 0; i < templateSelect.options.length; i++) {
+          if (templateSelect.options[i].value === savedTemplateSelection) {
+            selectionExists = true;
+            break;
+          }
+        }
+        
+        if (selectionExists) {
+          templateSelect.value = savedTemplateSelection;
+        }
       }
       
       // Update model inputs based on selected template
@@ -231,12 +265,280 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Initialize UI
   populateTemplateSelect();
+  initializeTemplateEditor();
   
   // Handle start/stop conversation button
   startButton.addEventListener('click', handleStartStopButton);
   
   // Handle export conversation button
   exportButton.addEventListener('click', exportConversation);
+  
+  // Initialize template editor
+  function initializeTemplateEditor() {
+    const editCurrentTemplateBtn = document.getElementById('edit-current-template') as HTMLButtonElement;
+    const importTemplateBtn = document.getElementById('import-template') as HTMLButtonElement;
+    const templateFileInput = document.getElementById('template-file-input') as HTMLInputElement;
+    const templateEditorForm = document.getElementById('template-editor-form') as HTMLDivElement;
+    const templateNameInput = document.getElementById('template-name') as HTMLInputElement;
+    const templateContentTextarea = document.getElementById('template-content') as HTMLTextAreaElement;
+    const saveTemplateBtn = document.getElementById('save-template') as HTMLButtonElement;
+    const exportTemplateBtn = document.getElementById('export-template') as HTMLButtonElement;
+    const clearCustomTemplateBtn = document.getElementById('clear-custom-template') as HTMLButtonElement;
+    const clearCustomTemplateStatusBtn = document.getElementById('clear-custom-template-status') as HTMLButtonElement;
+    const cancelEditBtn = document.getElementById('cancel-edit') as HTMLButtonElement;
+    const customTemplateStatus = document.getElementById('custom-template-status') as HTMLDivElement;
+    const customTemplateName = document.getElementById('custom-template-name') as HTMLSpanElement;
+    const editCustomTemplateBtn = document.getElementById('edit-custom-template') as HTMLButtonElement;
+    
+    // Check if custom template exists and update UI
+    function updateCustomTemplateStatus() {
+      const customTemplate = getCustomTemplate();
+      
+      if (customTemplate) {
+        customTemplateName.textContent = customTemplate.name;
+        customTemplateStatus.style.display = 'block';
+        
+        // Add "Custom" option to template select if not already present
+        let customOptionExists = false;
+        for (let i = 0; i < templateSelect.options.length; i++) {
+          if (templateSelect.options[i].value === 'custom') {
+            customOptionExists = true;
+            break;
+          }
+        }
+        
+        if (!customOptionExists) {
+          const customOption = document.createElement('option');
+          customOption.value = 'custom';
+          customOption.textContent = `Custom: ${customTemplate.name}`;
+          templateSelect.appendChild(customOption);
+        } else {
+          // Update the text of the custom option
+          for (let i = 0; i < templateSelect.options.length; i++) {
+            if (templateSelect.options[i].value === 'custom') {
+              templateSelect.options[i].textContent = `Custom: ${customTemplate.name}`;
+              break;
+            }
+          }
+        }
+      } else {
+        customTemplateStatus.style.display = 'none';
+        
+        // Remove "Custom" option from template select if present
+        for (let i = 0; i < templateSelect.options.length; i++) {
+          if (templateSelect.options[i].value === 'custom') {
+            templateSelect.remove(i);
+            break;
+          }
+        }
+      }
+    }
+    
+    // Edit current template
+    editCurrentTemplateBtn.addEventListener('click', async () => {
+      const currentTemplate = templateSelect.value;
+      
+      try {
+        let templateContent: string;
+        let templateName: string;
+        
+        if (currentTemplate === 'custom') {
+          // Edit existing custom template
+          const customTemplate = getCustomTemplate();
+          if (customTemplate) {
+            templateContent = customTemplate.content;
+            templateName = customTemplate.name;
+          } else {
+            throw new Error('Custom template not found');
+          }
+        } else {
+          // Load built-in template
+          const response = await fetch(`./templates/${currentTemplate}.jsonl`);
+          if (!response.ok) {
+            throw new Error(`Template '${currentTemplate}' not found.`);
+          }
+          templateContent = await response.text();
+          templateName = `${currentTemplate} (Custom)`;
+        }
+        
+        // Populate editor form
+        templateNameInput.value = templateName;
+        templateContentTextarea.value = templateContent;
+        
+        // Show editor form
+        templateEditorForm.style.display = 'block';
+      } catch (error) {
+        console.error('Error loading template for editing:', error);
+        addOutputMessage('System', `Error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+    
+    // Import template
+    importTemplateBtn.addEventListener('click', () => {
+      templateFileInput.click();
+    });
+    
+    // Handle file selection
+    templateFileInput.addEventListener('change', (event) => {
+      const files = (event.target as HTMLInputElement).files;
+      if (!files || files.length === 0) return;
+      
+      const file = files[0];
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        
+        // Validate JSONL content
+        try {
+          const lines = content.trim().split('\n');
+          for (const line of lines) {
+            if (line.trim()) {
+              JSON.parse(line); // This will throw if invalid JSON
+            }
+          }
+          
+          // Populate editor form
+          templateNameInput.value = file.name.replace('.jsonl', '');
+          templateContentTextarea.value = content;
+          
+          // Show editor form
+          templateEditorForm.style.display = 'block';
+        } catch (error) {
+          console.error('Invalid JSONL file:', error);
+          addOutputMessage('System', 'Error: Invalid JSONL file. Please check the file format.');
+        }
+      };
+      
+      reader.onerror = () => {
+        addOutputMessage('System', 'Error: Failed to read the file.');
+      };
+      
+      reader.readAsText(file);
+      
+      // Reset file input
+      templateFileInput.value = '';
+    });
+    
+    // Save template
+    saveTemplateBtn.addEventListener('click', () => {
+      const name = templateNameInput.value.trim();
+      const content = templateContentTextarea.value.trim();
+      
+      if (!name) {
+        addOutputMessage('System', 'Error: Template name is required.');
+        return;
+      }
+      
+      if (!content) {
+        addOutputMessage('System', 'Error: Template content is required.');
+        return;
+      }
+      
+      // Validate JSONL content
+      try {
+        const lines = content.split('\n');
+        for (const line of lines) {
+          if (line.trim()) {
+            JSON.parse(line); // This will throw if invalid JSON
+          }
+        }
+        
+        // Save custom template
+        saveCustomTemplate({
+          name,
+          content,
+          originalName: templateSelect.value !== 'custom' ? templateSelect.value : undefined,
+          lastModified: Date.now()
+        });
+        
+        // Update UI
+        templateEditorForm.style.display = 'none';
+        updateCustomTemplateStatus();
+        
+        // Select custom template
+        for (let i = 0; i < templateSelect.options.length; i++) {
+          if (templateSelect.options[i].value === 'custom') {
+            templateSelect.selectedIndex = i;
+            break;
+          }
+        }
+        
+        // Trigger change event to update model inputs
+        const event = new Event('change');
+        templateSelect.dispatchEvent(event);
+        
+        addOutputMessage('System', `Custom template "${name}" saved.`);
+      } catch (error) {
+        console.error('Invalid JSONL content:', error);
+        addOutputMessage('System', 'Error: Invalid JSONL content. Please check the format.');
+      }
+    });
+    
+    // Export template
+    exportTemplateBtn.addEventListener('click', () => {
+      const name = templateNameInput.value.trim() || 'template';
+      const content = templateContentTextarea.value.trim();
+      
+      if (!content) {
+        addOutputMessage('System', 'Error: No content to export.');
+        return;
+      }
+      
+      // Create blob and download
+      const blob = new Blob([content], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name}.jsonl`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+    
+    // Clear custom template
+    const handleClearCustomTemplate = () => {
+      clearCustomTemplate();
+      updateCustomTemplateStatus();
+      
+      // If custom template was selected, switch to first available template
+      if (templateSelect.value === 'custom' && templateSelect.options.length > 0) {
+        templateSelect.selectedIndex = 0;
+        
+        // Trigger change event to update model inputs
+        const event = new Event('change');
+        templateSelect.dispatchEvent(event);
+      }
+      
+      addOutputMessage('System', 'Custom template cleared.');
+    };
+    
+    clearCustomTemplateBtn.addEventListener('click', handleClearCustomTemplate);
+    clearCustomTemplateStatusBtn.addEventListener('click', handleClearCustomTemplate);
+    
+    // Cancel editing
+    cancelEditBtn.addEventListener('click', () => {
+      templateEditorForm.style.display = 'none';
+      templateNameInput.value = '';
+      templateContentTextarea.value = '';
+    });
+    
+    // Edit custom template
+    editCustomTemplateBtn.addEventListener('click', () => {
+      const customTemplate = getCustomTemplate();
+      
+      if (customTemplate) {
+        templateNameInput.value = customTemplate.name;
+        templateContentTextarea.value = customTemplate.content;
+        templateEditorForm.style.display = 'block';
+      }
+    });
+    
+    // Initialize
+    updateCustomTemplateStatus();
+  }
   
   // Handle start/stop button click
   function handleStartStopButton() {

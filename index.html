@@ -80,6 +80,51 @@
         </div>
       </div>
       
+      <!-- Template Editor Section -->
+      <div class="template-editor collapsible-section collapsed">
+        <div class="collapsible-header">
+          <h2>Template Editor</h2>
+          <span class="collapse-indicator">▼</span>
+        </div>
+        <div class="collapsible-content">
+          <!-- Template Editor Controls -->
+          <div class="template-editor-controls">
+            <button id="edit-current-template" class="secondary-button">Edit Current Template</button>
+            <button id="import-template" class="secondary-button">Import Template</button>
+            <input type="file" id="template-file-input" accept=".jsonl" style="display: none;">
+          </div>
+          
+          <!-- Template Editor Form -->
+          <div id="template-editor-form" style="display: none;">
+            <div class="input-group">
+              <label for="template-name">Template Name:</label>
+              <input type="text" id="template-name" placeholder="Enter template name">
+            </div>
+            
+            <!-- Template Content Editor -->
+            <div class="template-content-editor">
+              <label for="template-content">Template Content (JSONL):</label>
+              <textarea id="template-content" rows="10"></textarea>
+            </div>
+            
+            <!-- Template Editor Actions -->
+            <div class="template-editor-actions">
+              <button id="save-template" class="primary-button">Save as Custom Template</button>
+              <button id="export-template" class="secondary-button">Export to File</button>
+              <button id="clear-custom-template" class="secondary-button">Clear Custom Template</button>
+              <button id="cancel-edit" class="secondary-button">Cancel</button>
+            </div>
+          </div>
+          
+          <!-- Custom Template Status -->
+          <div id="custom-template-status" style="display: none;">
+            <p>Using custom template: <span id="custom-template-name"></span></p>
+            <button id="edit-custom-template" class="secondary-button">Edit</button>
+            <button id="clear-custom-template-status" class="secondary-button">Clear</button>
+          </div>
+        </div>
+      </div>
+      
       <div class="button-container">
         <button id="start-conversation" class="primary-button">Start Conversation</button>
         <button id="export-conversation" class="secondary-button" style="display: none;">Export Conversation</button>

@@ -30,3 +30,10 @@ export interface ApiKeys {
   openaiApiKey: string;
   hyperbolicApiKey: string;
 }
+
+export interface CustomTemplate {
+  name: string;        // Display name for the template
+  content: string;     // Raw JSONL content
+  originalName?: string; // Name of original template if this is based on an existing one
+  lastModified: number; // Timestamp
+}
