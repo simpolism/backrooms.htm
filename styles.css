@@ -103,13 +103,13 @@ button:active {
   margin-bottom: 10px;
 }
 
-.model-input-group {
+.model-input-group, .template-input-group {
   display: flex;
   margin-bottom: 5px;
   align-items: center;
 }
 
-.model-input-group label {
+.model-input-group label, .template-input-group label {
   margin-bottom: 0;
   margin-right: 10px;
   min-width: 80px;
