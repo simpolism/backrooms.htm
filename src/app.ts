@@ -15,6 +15,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const addModelButton = document.getElementById('add-model') as HTMLButtonElement;
   const modelInputs = document.getElementById('model-inputs') as HTMLDivElement;
   
+  // Initialize collapsible sections
+  const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+  collapsibleHeaders.forEach(header => {
+    header.addEventListener('click', () => {
+      const section = header.closest('.collapsible-section');
+      section?.classList.toggle('collapsed');
+    });
+  });
+  
   // Conversation state
   let activeConversation: Conversation | null = null;
   let isConversationRunning = false;
@@ -36,6 +45,22 @@ document.addEventListener('DOMContentLoaded', () => {
   openaiKeyInput.addEventListener('change', () => saveToLocalStorage('openaiApiKey', openaiKeyInput.value));
   hyperbolicKeyInput.addEventListener('change', () => saveToLocalStorage('hyperbolicApiKey', hyperbolicKeyInput.value));
   worldInterfaceKeyInput.addEventListener('change', () => saveToLocalStorage('worldInterfaceKey', worldInterfaceKeyInput.value));
+  
+  // Load saved model and template selections if available
+  const savedModelSelections = loadFromLocalStorage('modelSelections', []);
+  const savedTemplateSelection = loadFromLocalStorage('templateSelection', '');
+  
+  // Function to save all model selections
+  function saveModelSelections() {
+    const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
+    const models: string[] = Array.from(allModelSelects).map(select => select.value);
+    saveToLocalStorage('modelSelections', models);
+  }
+  
+  // Save template selection when changed
+  templateSelect.addEventListener('change', () => {
+    saveToLocalStorage('templateSelection', templateSelect.value);
+  });
 
   // Color generator for actors
   const colorGenerator = generateDistinctColors();
@@ -43,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Populate model selects
   function populateModelSelects() {
-    modelSelects.forEach(select => {
+    modelSelects.forEach((select, index) => {
       select.innerHTML = '';
       
       // Add CLI option
@@ -59,6 +84,14 @@ document.addEventListener('DOMContentLoaded', () => {
         option.textContent = `${MODEL_INFO[modelKey].display_name} (${modelKey})`;
         select.appendChild(option);
       });
+      
+      // Set selected value if available
+      if (savedModelSelections && savedModelSelections[index]) {
+        select.value = savedModelSelections[index];
+      }
+      
+      // Add change event listener to save selection
+      select.addEventListener('change', saveModelSelections);
     });
   }
   
@@ -81,11 +114,17 @@ document.addEventListener('DOMContentLoaded', () => {
     modelInputs.appendChild(newGroup);
     
     // Populate the new select
-    populateModelSelect(select);
+    populateModelSelect(select, modelCount);
+    
+    // Add change event listener to save selection
+    select.addEventListener('change', saveModelSelections);
+    
+    // Save the updated model selections
+    saveModelSelections();
   }
   
   // Populate a single model select
-  function populateModelSelect(select: HTMLSelectElement) {
+  function populateModelSelect(select: HTMLSelectElement, index?: number) {
     // Add CLI option
     const cliOption = document.createElement('option');
     cliOption.value = 'cli';
@@ -99,6 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
       option.textContent = `${MODEL_INFO[modelKey].display_name} (${modelKey})`;
       select.appendChild(option);
     });
+    
+    // Set selected value if available and index is provided
+    if (index !== undefined && savedModelSelections && savedModelSelections[index]) {
+      select.value = savedModelSelections[index];
+    }
+    
+    // Add change event listener to save selection
+    select.addEventListener('change', saveModelSelections);
   }
   
   // Populate template select
@@ -113,6 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
         option.textContent = template;
         templateSelect.appendChild(option);
       });
+      
+      // Set selected template if available
+      if (savedTemplateSelection && templates.includes(savedTemplateSelection)) {
+        templateSelect.value = savedTemplateSelection;
+      }
     } catch (error) {
       console.error('Error loading templates:', error);
       addOutputMessage('System', 'Error loading templates. Please check the console for details.');
@@ -122,6 +174,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize UI
   populateModelSelects();
   populateTemplateSelect();
+  
+  // Add additional model selects if needed based on saved selections
+  if (savedModelSelections && savedModelSelections.length > modelSelects.length) {
+    for (let i = modelSelects.length; i < savedModelSelections.length; i++) {
+      addModelSelect();
+    }
+  }
   
   // Handle add model button
   addModelButton.addEventListener('click', addModelSelect);
@@ -169,9 +228,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const blob = new Blob([conversationText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
+    // Include date in the filename
+    const now = new Date();
+    const dateStr = now.toISOString().replace(/[:.]/g, '-');
+    
     const a = document.createElement('a');
     a.href = url;
-    a.download = `conversation-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+    a.download = `conversation-${dateStr}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -185,12 +248,16 @@ document.addEventListener('DOMContentLoaded', () => {
       actorColors[actor] = getRgbColor(colorGenerator.next());
     }
     
+    // Format current timestamp
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
     const messageDiv = document.createElement('div');
     messageDiv.className = 'actor-response';
     
     const headerDiv = document.createElement('div');
     headerDiv.className = 'actor-header';
-    headerDiv.textContent = `### ${actor} ###`;
+    headerDiv.textContent = `### ${actor} [${timestamp}] ###`;
     headerDiv.style.color = actorColors[actor];
     
     const contentDiv = document.createElement('div');

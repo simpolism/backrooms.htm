@@ -163,3 +163,48 @@ button:hover {
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
+
+/* Collapsible section styles */
+.collapsible-section {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapsible-header h2 {
+  margin-bottom: 0;
+}
+
+.collapse-indicator {
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
+
+.collapsed .collapse-indicator {
+  transform: rotate(-90deg);
+}
+
+.collapsible-content {
+  padding: 1rem;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 1000px;
+  opacity: 1;
+  overflow: hidden;
+}
+
+.collapsed .collapsible-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
