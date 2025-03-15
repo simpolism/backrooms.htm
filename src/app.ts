@@ -71,14 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let isConversationRunning = false;
 
   // API key input elements
-  const anthropicKeyInput = document.getElementById('anthropic-key') as HTMLInputElement;
-  const openaiKeyInput = document.getElementById('openai-key') as HTMLInputElement;
   const hyperbolicKeyInput = document.getElementById('hyperbolic-key') as HTMLInputElement;
   const openrouterKeyInput = document.getElementById('openrouter-key') as HTMLInputElement;
 
   // Load saved API keys if available
-  anthropicKeyInput.value = loadFromLocalStorage('anthropicApiKey', '');
-  openaiKeyInput.value = loadFromLocalStorage('openaiApiKey', '');
   hyperbolicKeyInput.value = loadFromLocalStorage('hyperbolicApiKey', '');
   openrouterKeyInput.value = loadFromLocalStorage('openrouterApiKey', '');
   
@@ -109,16 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Save API keys when changed and refresh model selects
-  anthropicKeyInput.addEventListener('change', () => {
-    saveToLocalStorage('anthropicApiKey', anthropicKeyInput.value);
-    refreshModelSelects();
-  });
-  
-  openaiKeyInput.addEventListener('change', () => {
-    saveToLocalStorage('openaiApiKey', openaiKeyInput.value);
-    refreshModelSelects();
-  });
-  
   hyperbolicKeyInput.addEventListener('change', () => {
     saveToLocalStorage('hyperbolicApiKey', hyperbolicKeyInput.value);
     refreshModelSelects();
@@ -444,8 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Get current API keys
     const apiKeys = {
-      anthropic: anthropicKeyInput.value,
-      openai: openaiKeyInput.value,
       hyperbolic: hyperbolicKeyInput.value,
       openrouter: openrouterKeyInput.value
     };
@@ -471,13 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let apiKeyAvailable = false;
       let apiKeyName = '';
       
-      if (company === 'anthropic') {
-        apiKeyAvailable = !!apiKeys.anthropic;
-        apiKeyName = 'Anthropic';
-      } else if (company === 'openai') {
-        apiKeyAvailable = !!apiKeys.openai;
-        apiKeyName = 'OpenAI';
-      } else if (company === 'hyperbolic_completion') {
+      if (company === 'hyperbolic' || company === 'hyperbolic_completion') {
         apiKeyAvailable = !!apiKeys.hyperbolic;
         apiKeyName = 'Hyperbolic';
       } else if (company === 'openrouter') {
@@ -968,13 +946,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (existingMessage) {
         const contentDiv = existingMessage.querySelector('.response-content');
         if (contentDiv) {
-          if (isLoading) {
-            contentDiv.classList.add('loading-response');
-            contentDiv.textContent = "";  // The dots will be added by CSS
-          } else {
-            contentDiv.classList.remove('loading-response');
-            contentDiv.textContent = content;
-          }
+          // Update content
+          contentDiv.textContent = content;
+          
           // Scroll to bottom
           conversationOutput.scrollTop = conversationOutput.scrollHeight;
           return;
@@ -996,12 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const contentDiv = document.createElement('div');
     contentDiv.className = 'response-content';
-    if (isLoading) {
-      contentDiv.classList.add('loading-response');
-      contentDiv.textContent = "";  // The dots will be added by CSS
-    } else {
-      contentDiv.textContent = content;
-    }
+    contentDiv.textContent = content;
     
     messageDiv.appendChild(headerDiv);
     messageDiv.appendChild(contentDiv);
@@ -1038,8 +1007,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Get API keys
     const apiKeys: ApiKeys = {
-      anthropicApiKey: anthropicKeyInput.value,
-      openaiApiKey: openaiKeyInput.value,
       hyperbolicApiKey: hyperbolicKeyInput.value,
       openrouterApiKey: openrouterKeyInput.value,
     };
@@ -1049,11 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     for (const model of models) {
       const company = MODEL_INFO[model].company;
-      if (company === 'anthropic') {
-        requiredApis['anthropicApiKey'] = 'Anthropic API Key';
-      } else if (company === 'openai') {
-        requiredApis['openaiApiKey'] = 'OpenAI API Key';
-      } else if (company === 'hyperbolic_completion') {
+      if (company === 'hyperbolic' || company === 'hyperbolic_completion') {
         requiredApis['hyperbolicApiKey'] = 'Hyperbolic API Key';
       } else if (company === 'openrouter') {
         requiredApis['openrouterApiKey'] = 'OpenRouter API Key';

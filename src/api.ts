@@ -1,4 +1,62 @@
-import { Message } from './types';
+import { Message, StreamingCallback } from './types';
+
+// Helper function to process streaming responses
+async function processStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  onChunk: StreamingCallback
+): Promise<string> {
+  const decoder = new TextDecoder();
+  let fullText = '';
+  
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        // Signal completion
+        onChunk('', true);
+        break;
+      }
+      
+      // Decode the chunk
+      const chunk = decoder.decode(value, { stream: true });
+      
+      // Process the chunk (handle SSE format)
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const data = JSON.parse(line.substring(6));
+            let content = '';
+            
+            // Extract content based on response format
+            if (data.choices && data.choices[0]) {
+              if (data.choices[0].text) {
+                // Hyperbolic completion format
+                content = data.choices[0].text;
+              } else if (data.choices[0].message && data.choices[0].message.content) {
+                // OpenRouter format
+                content = data.choices[0].message.content;
+              }
+            }
+            
+            if (content) {
+              fullText += content;
+              onChunk(content, false);
+            }
+          } catch (e) {
+            console.error('Error parsing SSE data:', e);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error reading stream:', error);
+    throw error;
+  }
+  
+  return fullText;
+}
 
 export async function openrouterConversation(
   actor: string,
@@ -6,7 +64,8 @@ export async function openrouterConversation(
   context: Message[],
   systemPrompt: string | null,
   openrouterKey: string,
-  maxTokens: number = 1024
+  maxTokens: number = 1024,
+  onChunk?: StreamingCallback
 ): Promise<string> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
   
@@ -19,7 +78,8 @@ export async function openrouterConversation(
     model,
     messages,
     temperature: 1.0,
-    max_tokens: maxTokens
+    max_tokens: maxTokens,
+    stream: true // Enable streaming
   };
 
   try {
@@ -38,152 +98,17 @@ export async function openrouterConversation(
       throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
-    return data.choices[0].message.content;
+    // Process the stream
+    if (onChunk && response.body) {
+      const reader = response.body.getReader();
+      return processStream(reader, onChunk);
+    } else {
+      // Fallback to non-streaming for backward compatibility
+      const data = await response.json();
+      return data.choices[0].message.content;
+    }
   } catch (error) {
     console.error('Error calling OpenRouter API:', error);
-    throw error;
-  }
-}
-
-export async function claudeConversation(
-  actor: string,
-  model: string,
-  context: Message[],
-  systemPrompt: string | null,
-  anthropicKey: string,
-  maxTokens: number = 1024
-): Promise<string> {
-  const messages = context.map(m => ({ role: m.role, content: m.content }));
-
-  const requestBody: any = {
-    model,
-    max_tokens: maxTokens,
-    temperature: 1.0,
-    messages
-  };
-
-  if (systemPrompt) {
-    requestBody.system = systemPrompt;
-  }
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.content[0].text;
-  } catch (error) {
-    console.error('Error calling Claude API:', error);
-    throw error;
-  }
-}
-
-export async function gpt4Conversation(
-  actor: string,
-  model: string,
-  context: Message[],
-  systemPrompt: string | null,
-  openaiKey: string,
-  maxTokens: number = 1024
-): Promise<string> {
-  const messages = context.map(m => ({ role: m.role, content: m.content }));
-
-  // Add system prompt if provided
-  if (systemPrompt) {
-    // not supported by o1
-    // TODO: add a config variable to determine whether system prompt is supported
-    if (model.includes('o1')) {
-      messages.unshift({ role: 'user', content: systemPrompt });
-    } else {
-      messages.unshift({ role: 'system', content: systemPrompt });
-    }
-  }
-
-  const requestBody: any = {
-    model,
-    messages,
-    temperature: 1.0,
-    max_completion_tokens: maxTokens
-  };
-
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiKey}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error('Error calling OpenAI API:', error);
-    throw error;
-  }
-}
-
-// Not usable on llama3.1, but maybe usable with other models?
-export async function hyperbolicConversation(
-  actor: string,
-  model: string,
-  context: Message[],
-  systemPrompt: string | null,
-  hyperbolicKey: string,
-  maxTokens: number = 1024
-): Promise<string> {
-  const messages = context.map(m => ({ role: m.role, content: m.content }));
-  
-  // Add system prompt if provided
-  if (systemPrompt) {
-    messages.unshift({ role: 'system', content: systemPrompt });
-  }
-
-  const headers = {
-    'Authorization': `Bearer ${hyperbolicKey}`,
-    'Content-Type': 'application/json'
-  };
-  
-  const payload = {
-    model,
-    messages,
-    temperature: 1.0,
-    max_tokens: maxTokens
-  };
-
-  try {
-    const response = await fetch('https://api.hyperbolic.xyz/v1/chat/completions', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Hyperbolic API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error('Error calling Hyperbolic API:', error);
     throw error;
   }
 }
@@ -194,7 +119,8 @@ export async function hyperbolicCompletionConversation(
   context: Message[],
   systemPrompt: string | null,
   hyperbolicKey: string,
-  maxTokens: number = 1024
+  maxTokens: number = 1024,
+  onChunk?: StreamingCallback
 ): Promise<string> {
   // only use messages for system prompt, as llama base prefers a completion prompt
   const messages = [];
@@ -226,6 +152,7 @@ export async function hyperbolicCompletionConversation(
     temperature: 1.0,
     max_tokens: maxTokens,
     prompt,
+    stream: true // Enable streaming
   };
 
   try {
@@ -239,8 +166,15 @@ export async function hyperbolicCompletionConversation(
       throw new Error(`Hyperbolic Completion API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
-    return data.choices[0].text.trim();
+    // Process the stream
+    if (onChunk && response.body) {
+      const reader = response.body.getReader();
+      return processStream(reader, onChunk);
+    } else {
+      // Fallback to non-streaming for backward compatibility
+      const data = await response.json();
+      return data.choices[0].text.trim();
+    }
   } catch (error) {
     console.error('Error calling Hyperbolic Completion API:', error);
     throw error;

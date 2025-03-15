@@ -16,7 +16,6 @@ export interface TemplateConfig {
 }
 
 export interface ApiClients {
-  anthropic?: any;
   openai?: any;
 }
 
@@ -27,11 +26,12 @@ export interface ConversationOptions {
 }
 
 export interface ApiKeys {
-  anthropicApiKey: string;
-  openaiApiKey: string;
   hyperbolicApiKey: string;
   openrouterApiKey: string;
 }
+
+// Callback function type for streaming content updates
+export type StreamingCallback = (chunk: string, isDone: boolean) => void;
 
 export interface CustomTemplate {
   name: string;        // Display name for the template

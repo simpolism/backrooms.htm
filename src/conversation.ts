@@ -1,8 +1,6 @@
-import { Message, ApiKeys, ModelInfo } from './types';
+import { Message, ApiKeys, ModelInfo, StreamingCallback } from './types';
 import { MODEL_INFO } from './models';
 import {
-  claudeConversation,
-  gpt4Conversation,
   hyperbolicCompletionConversation,
   openrouterConversation,
 } from './api';
@@ -15,37 +13,21 @@ export function generateModelResponse(
   systemPrompt: string | null,
   apiKeys: ApiKeys,
   maxOutputLength: number = 1024,
-  modelIndex?: number
+  modelIndex?: number,
+  onChunk?: StreamingCallback
 ): Promise<string> {
   // Determine which API to use based on the company
   const company = modelInfo.company;
   
-  if (company === 'anthropic') {
-    return claudeConversation(
-      actor,
-      modelInfo.api_name,
-      context,
-      systemPrompt,
-      apiKeys.anthropicApiKey,
-      maxOutputLength
-    );
-  } else if (company === 'hyperbolic_completion') {
+  if (company === 'hyperbolic_completion') {
     return hyperbolicCompletionConversation(
       actor,
       modelInfo.api_name,
       context,
       systemPrompt,
       apiKeys.hyperbolicApiKey,
-      maxOutputLength
-    );
-  } else if (company === 'openai') {
-    return gpt4Conversation(
-      actor,
-      modelInfo.api_name,
-      context,
-      systemPrompt,
-      apiKeys.openaiApiKey,
-      maxOutputLength
+      maxOutputLength,
+      onChunk
     );
   } else if (company === 'openrouter') {
     // If this is the custom OpenRouter model, use the saved API name
@@ -71,7 +53,8 @@ export function generateModelResponse(
       context,
       systemPrompt,
       apiKeys.openrouterApiKey,
-      maxOutputLength
+      maxOutputLength,
+      onChunk
     );
   } else {
     throw new Error(`Unsupported model company: ${company}`);
@@ -89,6 +72,7 @@ export class Conversation {
   private maxTurns: number;
   private maxOutputLength: number;
   private currentTurn: number = 0;
+  private currentResponses: Map<string, string> = new Map(); // Track responses for each model
 
   constructor(
     models: string[],
@@ -136,12 +120,33 @@ export class Conversation {
     for (let i = 0; i < this.models.length; i++) {
       if (!this.isRunning) break;
       
-      // Add loading indicator with actor name and "..."
-      const loadingId = `loading-${Date.now()}-${i}`;
-      this.outputCallback(this.modelDisplayNames[i], "", loadingId, true);
+      // Create a unique ID for this response
+      const responseId = `response-${Date.now()}-${i}`;
+      
+      // Initialize empty response with retro cursor
+      this.currentResponses.set(responseId, "");
+      this.outputCallback(this.modelDisplayNames[i], "█", responseId, false);
       
       try {
-        // Make the API call
+        // Create streaming callback for this model
+        const streamingCallback: StreamingCallback = (chunk: string, isDone: boolean) => {
+          if (!this.isRunning) return;
+          
+          // Get current accumulated response
+          let currentResponse = this.currentResponses.get(responseId) || "";
+          
+          if (isDone) {
+            // Final update without cursor
+            this.outputCallback(this.modelDisplayNames[i], currentResponse, responseId, false);
+          } else {
+            // Update with new chunk and cursor
+            currentResponse += chunk;
+            this.currentResponses.set(responseId, currentResponse);
+            this.outputCallback(this.modelDisplayNames[i], currentResponse + "█", responseId, false);
+          }
+        };
+        
+        // Make the API call with streaming
         const response = await generateModelResponse(
           MODEL_INFO[this.models[i]],
           this.modelDisplayNames[i],
@@ -149,11 +154,9 @@ export class Conversation {
           this.systemPrompts[i],
           this.apiKeys,
           this.maxOutputLength,
-          i // Pass the model index
+          i, // Pass the model index
+          streamingCallback // Pass the streaming callback
         );
-        
-        // Replace loading indicator with actual response
-        this.outputCallback(this.modelDisplayNames[i], response, loadingId, false);
         
         // Check for conversation end signal
         if (response.includes('^C^C')) {
@@ -170,11 +173,11 @@ export class Conversation {
         }
       } catch (error) {
         console.error(`Error in turn processing for ${this.modelDisplayNames[i]}:`, error);
-        // Update loading indicator with error message
+        // Update with error message
         this.outputCallback(
           'System',
           `Error: Failed to get response from ${this.modelDisplayNames[i]}`,
-          loadingId,
+          responseId,
           false
         );
         this.stop();
