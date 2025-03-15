@@ -6,13 +6,15 @@ import {
   hyperbolicCompletionConversation,
   openrouterConversation,
 } from './api';
+import { loadFromLocalStorage } from './utils';
 
 export function generateModelResponse(
   modelInfo: ModelInfo,
   actor: string,
   context: Message[],
   systemPrompt: string | null,
-  apiKeys: ApiKeys
+  apiKeys: ApiKeys,
+  modelIndex?: number // Add this parameter
 ): Promise<string> {
   // Determine which API to use based on the company
   const company = modelInfo.company;
@@ -42,9 +44,26 @@ export function generateModelResponse(
       apiKeys.openaiApiKey
     );
   } else if (company === 'openrouter') {
+    // If this is the custom OpenRouter model, use the saved API name
+    let apiName = modelInfo.api_name;
+    
+    if (modelInfo.is_custom_selector && modelIndex !== undefined) {
+      const savedModel = loadFromLocalStorage(`openrouter_custom_model_${modelIndex}`, null);
+      if (savedModel) {
+        try {
+          const savedModelData = JSON.parse(savedModel);
+          if (savedModelData.id) {
+            apiName = savedModelData.id;
+          }
+        } catch (e) {
+          console.error('Error parsing saved model:', e);
+        }
+      }
+    }
+    
     return openrouterConversation(
       actor,
-      modelInfo.api_name,
+      apiName,
       context,
       systemPrompt,
       apiKeys.openrouterApiKey
@@ -117,7 +136,8 @@ export class Conversation {
           this.modelDisplayNames[i],
           this.contexts[i],
           this.systemPrompts[i],
-          this.apiKeys
+          this.apiKeys,
+          i // Pass the model index
         );
         
         // Process the response

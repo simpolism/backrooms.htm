@@ -2,6 +2,7 @@ export interface ModelInfo {
   api_name: string;
   display_name: string;
   company: string;
+  is_custom_selector?: boolean; // New flag to identify special entries
 }
 
 export interface Message {

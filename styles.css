@@ -336,6 +336,47 @@ input:checked + .toggle-slider:before {
   font-weight: bold;
 }
 
+/* OpenRouter Autocomplete Styles */
+.openrouter-autocomplete-container {
+  position: relative;
+  margin-top: 5px;
+  width: 100%;
+}
+
+.openrouter-autocomplete-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #000000;
+  font-size: 14px;
+  background-color: #FFFFFF;
+}
+
+.openrouter-autocomplete-dropdown {
+  position: absolute;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: #FFFFFF;
+  border: 1px solid #000000;
+  border-top: none;
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.openrouter-autocomplete-item {
+  padding: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #EEEEEE;
+}
+
+.openrouter-autocomplete-item:hover {
+  background-color: #EEEEEE;
+}
+
+.openrouter-autocomplete-item.error {
+  color: #FF0000;
+}
+
 /* Mobile-friendly adjustments */
 @media (max-width: 768px) {
   .template-editor-controls {
@@ -354,5 +395,14 @@ input:checked + .toggle-slider:before {
   #custom-template-status button {
     margin-top: 10px;
     width: 100%;
+  }
+  
+  .openrouter-autocomplete-input {
+    padding: 10px;
+    font-size: 16px; /* Prevent zoom on mobile */
+  }
+  
+  .openrouter-autocomplete-item {
+    padding: 12px 8px;
   }
 }

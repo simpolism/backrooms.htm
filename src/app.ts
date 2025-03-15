@@ -2,7 +2,7 @@ import { MODEL_INFO } from './models';
 import { Conversation } from './conversation';
 import { loadTemplate, getAvailableTemplates, saveCustomTemplate, getCustomTemplate, clearCustomTemplate } from './templates';
 import { generateDistinctColors, getRgbColor, saveToLocalStorage, loadFromLocalStorage } from './utils';
-import { ApiKeys, CustomTemplate } from './types';
+import { ApiKeys, CustomTemplate, ModelInfo } from './types';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize UI elements
@@ -147,6 +147,52 @@ document.addEventListener('DOMContentLoaded', () => {
     saveToLocalStorage('modelSelections', models);
   }
   
+  // Function to fetch OpenRouter models
+  async function fetchOpenRouterModels(apiKey: string): Promise<any[]> {
+    try {
+      // Check if we have cached models and they're not expired
+      const cachedData = loadFromLocalStorage('openrouterModelsCache', null);
+      if (cachedData) {
+        try {
+          const { models, timestamp } = JSON.parse(cachedData);
+          // Cache expires after 1 hour (3600000 ms)
+          if (Date.now() - timestamp < 3600000) {
+            return models;
+          }
+        } catch (e) {
+          console.error('Error parsing cached models:', e);
+          // Continue to fetch fresh data if cache parsing fails
+        }
+      }
+
+      // Fetch fresh data
+      const response = await fetch('https://openrouter.ai/api/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'Backrooms Chat'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Cache the results with timestamp
+      saveToLocalStorage('openrouterModelsCache', JSON.stringify({
+        models: data.data,
+        timestamp: Date.now()
+      }));
+      
+      return data.data;
+    } catch (error) {
+      console.error('Error fetching OpenRouter models:', error);
+      throw error;
+    }
+  }
+  
   // Color generator for actors
   const colorGenerator = generateDistinctColors();
   const actorColors: Record<string, string> = {};
@@ -218,6 +264,129 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // Create OpenRouter autocomplete field
+  async function createOpenRouterAutocomplete(select: HTMLSelectElement, index: number) {
+    // Create container for autocomplete
+    const container = document.createElement('div');
+    container.id = `openrouter-autocomplete-${index}`;
+    container.className = 'openrouter-autocomplete-container';
+    
+    // Create input field
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'openrouter-autocomplete-input';
+    input.placeholder = 'Search OpenRouter models...';
+    
+    // Create dropdown for results
+    const dropdown = document.createElement('div');
+    dropdown.className = 'openrouter-autocomplete-dropdown';
+    dropdown.style.display = 'none';
+    
+    // Add elements to container
+    container.appendChild(input);
+    container.appendChild(dropdown);
+    
+    // Insert after the select
+    if (select.parentNode) {
+      select.parentNode.insertBefore(container, select.nextSibling);
+    } else {
+      console.error('Cannot insert autocomplete: select has no parent node');
+      return;
+    }
+    
+    // Try to load previously selected model
+    const savedModel = loadFromLocalStorage(`openrouter_custom_model_${index}`, null);
+    if (savedModel) {
+      try {
+        const savedModelData = JSON.parse(savedModel);
+        input.value = savedModelData.name || '';
+        input.dataset.id = savedModelData.id || '';
+      } catch (e) {
+        console.error('Error parsing saved model:', e);
+      }
+    }
+    
+    // Load OpenRouter models
+    try {
+      const models = await fetchOpenRouterModels(openrouterKeyInput.value);
+      
+      // Function to filter and display models
+      const filterModels = (query: string) => {
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'block';
+        
+        const filteredModels = query
+          ? models.filter(model =>
+              model.id.toLowerCase().includes(query.toLowerCase()) ||
+              (model.name && model.name.toLowerCase().includes(query.toLowerCase()))
+            )
+          : models;
+        
+        // Limit to first 10 results
+        const displayModels = filteredModels.slice(0, 10);
+        
+        if (displayModels.length === 0) {
+          const noResults = document.createElement('div');
+          noResults.className = 'openrouter-autocomplete-item';
+          noResults.textContent = 'No models found';
+          dropdown.appendChild(noResults);
+        } else {
+          displayModels.forEach(model => {
+            const item = document.createElement('div');
+            item.className = 'openrouter-autocomplete-item';
+            item.textContent = model.name || model.id;
+            
+            // Add click handler
+            item.addEventListener('click', () => {
+              input.value = model.name || model.id;
+              input.dataset.id = model.id;
+              dropdown.style.display = 'none';
+              
+              // Save selected model
+              saveToLocalStorage(`openrouter_custom_model_${index}`, JSON.stringify({
+                id: model.id,
+                name: model.name || model.id
+              }));
+            });
+            
+            dropdown.appendChild(item);
+          });
+        }
+      };
+      
+      // Initial filter
+      filterModels('');
+      
+      // Add input event listener
+      input.addEventListener('input', () => {
+        filterModels(input.value);
+      });
+      
+      // Add focus event listener
+      input.addEventListener('focus', () => {
+        filterModels(input.value);
+      });
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (event) => {
+        if (!container.contains(event.target as Node)) {
+          dropdown.style.display = 'none';
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error loading OpenRouter models:', error);
+      
+      // Show error in dropdown
+      const errorItem = document.createElement('div');
+      errorItem.className = 'openrouter-autocomplete-item error';
+      errorItem.textContent = 'Error loading models. Please check your API key.';
+      dropdown.innerHTML = '';
+      dropdown.appendChild(errorItem);
+      dropdown.style.display = 'block';
+    }
+  }
+
   // Populate a single model select
   function populateModelSelect(select: HTMLSelectElement, index?: number) {
     select.innerHTML = '';
@@ -229,6 +398,14 @@ document.addEventListener('DOMContentLoaded', () => {
       hyperbolic: hyperbolicKeyInput.value,
       openrouter: openrouterKeyInput.value
     };
+
+    // Remove any existing autocomplete field
+    if (index !== undefined) {
+      const existingAutocomplete = document.getElementById(`openrouter-autocomplete-${index}`);
+      if (existingAutocomplete) {
+        existingAutocomplete.remove();
+      }
+    }
 
     // Add model options
     Object.keys(MODEL_INFO).forEach(modelKey => {
@@ -274,8 +451,36 @@ document.addEventListener('DOMContentLoaded', () => {
       select.value = savedModelSelections[index];
     }
     
-    // Add change event listener to save selection
-    select.addEventListener('change', saveModelSelections);
+    // Add change event listener to save selection and handle OpenRouter custom selector
+    select.addEventListener('change', (event) => {
+      saveModelSelections();
+      
+      // Check if this is the OpenRouter custom selector
+      if (index !== undefined) {
+        const selectedModelKey = select.value;
+        const modelInfo = MODEL_INFO[selectedModelKey];
+        
+        // Remove any existing autocomplete field
+        const existingAutocomplete = document.getElementById(`openrouter-autocomplete-${index}`);
+        if (existingAutocomplete) {
+          existingAutocomplete.remove();
+        }
+        
+        // If this is the OpenRouter custom selector and API key is available, show autocomplete
+        if (modelInfo && modelInfo.is_custom_selector && apiKeys.openrouter) {
+          createOpenRouterAutocomplete(select, index);
+        }
+      }
+    });
+    
+    // Check if the current selection is the OpenRouter custom selector and show autocomplete if needed
+    if (index !== undefined) {
+      const currentValue = select.value;
+      const modelInfo = MODEL_INFO[currentValue];
+      if (modelInfo && modelInfo.is_custom_selector && apiKeys.openrouter) {
+        createOpenRouterAutocomplete(select, index);
+      }
+    }
   }
   
   // Populate template select

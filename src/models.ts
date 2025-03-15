@@ -51,4 +51,10 @@ export const MODEL_INFO: Record<string, ModelInfo> = {
     "display_name": "Gemini",
     "company": "openrouter",
   },
+  "openrouter_custom": {
+    "api_name": "custom", // This will be replaced with the actual model ID
+    "display_name": "OpenRouter Custom",
+    "company": "openrouter",
+    "is_custom_selector": true
+  },
 };
