@@ -97,7 +97,7 @@ export class Conversation {
     
     this.outputCallback(
       'System',
-      `\nReached maximum number of turns (${this.maxTurns}). Conversation ended.`
+      `\nConversation ended.`
     );
   }
 

@@ -81,6 +81,12 @@ button:hover {
   background-color: #5a6268;
 }
 
+.button-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .primary-button {
   background-color: var(--primary-color);
   display: block;
@@ -92,6 +98,27 @@ button:hover {
 
 .primary-button:hover {
   background-color: #3b5998;
+}
+
+.primary-button.stop {
+  background-color: var(--danger-color);
+}
+
+.primary-button.stop:hover {
+  background-color: #c82333;
+}
+
+.secondary-button {
+  background-color: var(--success-color);
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.secondary-button:hover {
+  background-color: #218838;
 }
 
 .model-inputs {

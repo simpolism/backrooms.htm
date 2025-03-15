@@ -10,9 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const templateSelect = document.getElementById('template-select') as HTMLSelectElement;
   const maxTurnsInput = document.getElementById('max-turns') as HTMLInputElement;
   const startButton = document.getElementById('start-conversation') as HTMLButtonElement;
+  const exportButton = document.getElementById('export-conversation') as HTMLButtonElement;
   const conversationOutput = document.getElementById('conversation-output') as HTMLDivElement;
   const addModelButton = document.getElementById('add-model') as HTMLButtonElement;
   const modelInputs = document.getElementById('model-inputs') as HTMLDivElement;
+  
+  // Conversation state
+  let activeConversation: Conversation | null = null;
+  let isConversationRunning = false;
 
   // API key input elements
   const anthropicKeyInput = document.getElementById('anthropic-key') as HTMLInputElement;
@@ -121,8 +126,57 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle add model button
   addModelButton.addEventListener('click', addModelSelect);
   
-  // Handle start conversation button
-  startButton.addEventListener('click', startConversation);
+  // Handle start/stop conversation button
+  startButton.addEventListener('click', handleStartStopButton);
+  
+  // Handle export conversation button
+  exportButton.addEventListener('click', exportConversation);
+  
+  // Handle start/stop button click
+  function handleStartStopButton() {
+    if (isConversationRunning) {
+      stopConversation();
+    } else {
+      startConversation();
+    }
+  }
+  
+  // Stop the active conversation
+  function stopConversation() {
+    if (activeConversation) {
+      activeConversation.stop();
+      addOutputMessage('System', 'Conversation stopped by user.');
+      
+      // Update UI
+      isConversationRunning = false;
+      startButton.textContent = 'Start Conversation';
+      startButton.classList.remove('stop');
+      exportButton.style.display = 'block';
+      addModelButton.disabled = false;
+    }
+  }
+  
+  // Export conversation to a file
+  function exportConversation() {
+    const conversationText = Array.from(conversationOutput.children)
+      .map(child => {
+        const header = child.querySelector('.actor-header')?.textContent || '';
+        const content = child.querySelector('.response-content')?.textContent || '';
+        return `${header}\n${content}\n`;
+      })
+      .join('\n');
+    
+    const blob = new Blob([conversationText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `conversation-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
   
   // Add message to conversation output
   function addOutputMessage(actor: string, content: string) {
@@ -153,6 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Start conversation
   async function startConversation() {
+    // Hide export button when starting a new conversation
+    exportButton.style.display = 'none';
+    
     // Clear previous output
     conversationOutput.innerHTML = '';
     
@@ -209,9 +266,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     try {
-      // Disable UI during conversation
-      startButton.disabled = true;
+      // Update UI to show we're in conversation mode
+      startButton.textContent = 'Stop Conversation';
+      startButton.classList.add('stop');
       addModelButton.disabled = true;
+      isConversationRunning = true;
       
       // Load template config
       const configs = await loadTemplate(templateName, models);
@@ -225,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const contexts = configs.map(config => config.context || []);
       
       // Start conversation
-      const conversation = new Conversation(
+      activeConversation = new Conversation(
         models,
         systemPrompts,
         contexts,
@@ -235,14 +294,24 @@ document.addEventListener('DOMContentLoaded', () => {
       );
       
       addOutputMessage('System', 'Starting conversation...');
-      await conversation.start();
+      await activeConversation.start();
+      
+      // Conversation ended naturally
+      isConversationRunning = false;
+      startButton.textContent = 'Start Conversation';
+      startButton.classList.remove('stop');
+      exportButton.style.display = 'block';
+      addModelButton.disabled = false;
     } catch (error) {
       console.error('Error starting conversation:', error);
       addOutputMessage('System', `Error: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      // Re-enable UI
-      startButton.disabled = false;
+      
+      // Reset UI on error
+      isConversationRunning = false;
+      startButton.textContent = 'Start Conversation';
+      startButton.classList.remove('stop');
       addModelButton.disabled = false;
+      exportButton.style.display = 'block';
     }
   }
 });
