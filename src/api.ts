@@ -34,8 +34,11 @@ async function processStream(
               if (data.choices[0].text) {
                 // Hyperbolic completion format
                 content = data.choices[0].text;
+              } else if (data.choices[0].delta && data.choices[0].delta.content) {
+                // OpenRouter streaming format (newer API versions)
+                content = data.choices[0].delta.content;
               } else if (data.choices[0].message && data.choices[0].message.content) {
-                // OpenRouter format
+                // OpenRouter format (older API versions)
                 content = data.choices[0].message.content;
               }
             }
@@ -43,6 +46,8 @@ async function processStream(
             if (content) {
               fullText += content;
               onChunk(content, false);
+            } else {
+              console.warn('No content extracted from response:', JSON.stringify(data));
             }
           } catch (e) {
             console.error('Error parsing SSE data:', e);
