@@ -271,8 +271,18 @@ document.addEventListener('DOMContentLoaded', () => {
     container.id = `openrouter-autocomplete-${index}`;
     container.className = 'openrouter-autocomplete-container';
     
+    // Create subgroup with label (similar to model-input-group)
+    const subgroup = document.createElement('div');
+    subgroup.className = 'model-input-subgroup';
+    
+    // Create label
+    const labelElement = document.createElement('label');
+    labelElement.textContent = 'OpenRouter:';
+    labelElement.setAttribute('for', `openrouter-model-${index}`);
+    
     // Create input field
     const input = document.createElement('input');
+    input.id = `openrouter-model-${index}`;
     input.type = 'text';
     input.className = 'openrouter-autocomplete-input';
     input.placeholder = 'Search OpenRouter models...';
@@ -283,14 +293,17 @@ document.addEventListener('DOMContentLoaded', () => {
     dropdown.style.display = 'none';
     
     // Add elements to container
-    container.appendChild(input);
+    subgroup.appendChild(labelElement);
+    subgroup.appendChild(input);
+    container.appendChild(subgroup);
     container.appendChild(dropdown);
     
-    // Insert after the select
-    if (select.parentNode) {
-      select.parentNode.insertBefore(container, select.nextSibling);
+    // Find the model-input-group parent and insert after it
+    const modelInputGroup = select.closest('.model-input-group');
+    if (modelInputGroup && modelInputGroup.parentNode) {
+      modelInputGroup.parentNode.insertBefore(container, modelInputGroup.nextSibling);
     } else {
-      console.error('Cannot insert autocomplete: select has no parent node');
+      console.error('Cannot insert autocomplete: model input group not found');
       return;
     }
     

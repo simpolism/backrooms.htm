@@ -340,33 +340,37 @@ input:checked + .toggle-slider:before {
 .openrouter-autocomplete-container {
   position: relative;
   margin-top: 5px;
-  width: 100%;
+  margin-bottom: 10px;
+  width: 100%; /* Full width of parent */
+  padding-left: 0; /* Align with the model dropdown */
 }
 
 .openrouter-autocomplete-input {
   width: 100%;
-  padding: 8px;
+  padding: 3px; /* Match the padding of other inputs */
   border: 1px solid #000000;
   font-size: 14px;
   background-color: #FFFFFF;
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 .openrouter-autocomplete-dropdown {
   position: absolute;
   width: 100%;
-  max-height: 200px;
+  max-height: 150px; /* Slightly smaller */
   overflow-y: auto;
   background-color: #FFFFFF;
   border: 1px solid #000000;
   border-top: none;
   z-index: 10;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box; /* Include border in width calculation */
 }
 
 .openrouter-autocomplete-item {
-  padding: 8px;
+  padding: 3px 5px; /* Match other input padding */
   cursor: pointer;
   border-bottom: 1px solid #EEEEEE;
+  font-size: 14px;
 }
 
 .openrouter-autocomplete-item:hover {
@@ -375,6 +379,27 @@ input:checked + .toggle-slider:before {
 
 .openrouter-autocomplete-item.error {
   color: #FF0000;
+}
+
+.openrouter-autocomplete-label {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 14px;
+  font-weight: normal;
+  color: #000000; /* Match other labels */
+}
+
+/* Add a new model-input-subgroup class for the autocomplete */
+.model-input-subgroup {
+  display: flex;
+  margin-bottom: 5px;
+  align-items: center;
+}
+
+.model-input-subgroup label {
+  margin-bottom: 0;
+  margin-right: 10px;
+  min-width: 80px;
 }
 
 /* Mobile-friendly adjustments */
@@ -397,12 +422,38 @@ input:checked + .toggle-slider:before {
     width: 100%;
   }
   
+  .openrouter-autocomplete-container {
+    margin-left: 0; /* Remove margin on mobile */
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+  
   .openrouter-autocomplete-input {
-    padding: 10px;
-    font-size: 16px; /* Prevent zoom on mobile */
+    padding: 4px;
+    font-size: 14px;
+    height: 28px; /* Control the height explicitly */
   }
   
   .openrouter-autocomplete-item {
-    padding: 12px 8px;
+    padding: 4px 6px;
+    font-size: 13px;
+  }
+  
+  .openrouter-autocomplete-dropdown {
+    max-height: 120px; /* Smaller on mobile */
+  }
+  
+  .openrouter-autocomplete-label {
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+  
+  .model-input-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .model-input-group label {
+    margin-bottom: 5px;
   }
 }
