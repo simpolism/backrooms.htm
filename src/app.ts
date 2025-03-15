@@ -6,14 +6,15 @@ import { ApiKeys } from './types';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize UI elements
-  const modelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
   const templateSelect = document.getElementById('template-select') as HTMLSelectElement;
   const maxTurnsInput = document.getElementById('max-turns') as HTMLInputElement;
   const startButton = document.getElementById('start-conversation') as HTMLButtonElement;
   const exportButton = document.getElementById('export-conversation') as HTMLButtonElement;
   const conversationOutput = document.getElementById('conversation-output') as HTMLDivElement;
-  const addModelButton = document.getElementById('add-model') as HTMLButtonElement;
   const modelInputs = document.getElementById('model-inputs') as HTMLDivElement;
+  
+  // Track current template model count
+  let currentTemplateModelCount = 2; // Default to 2 models
   
   // Font size and word wrap controls
   const decreaseFontSizeBtn = document.getElementById('decrease-font-size') as HTMLButtonElement;
@@ -121,74 +122,67 @@ document.addEventListener('DOMContentLoaded', () => {
     saveToLocalStorage('modelSelections', models);
   }
   
-  // Save template selection when changed
-  templateSelect.addEventListener('change', () => {
-    saveToLocalStorage('templateSelection', templateSelect.value);
-  });
-
   // Color generator for actors
   const colorGenerator = generateDistinctColors();
   const actorColors: Record<string, string> = {};
   
-  // Populate model selects
-  function populateModelSelects() {
-    modelSelects.forEach((select, index) => {
-      select.innerHTML = '';
-      
-      // Add CLI option
-      const cliOption = document.createElement('option');
-      cliOption.value = 'cli';
-      cliOption.textContent = 'CLI';
-      select.appendChild(cliOption);
-      
-      // Add model options
-      Object.keys(MODEL_INFO).forEach(modelKey => {
-        const option = document.createElement('option');
-        option.value = modelKey;
-        option.textContent = `${MODEL_INFO[modelKey].display_name} (${modelKey})`;
-        select.appendChild(option);
-      });
-      
-      // Set selected value if available
-      if (savedModelSelections && savedModelSelections[index]) {
-        select.value = savedModelSelections[index];
+  // Get the number of models from the template file
+  async function getTemplateModelCount(templateName: string): Promise<number> {
+    try {
+      const response = await fetch(`./templates/${templateName}.jsonl`);
+      if (!response.ok) {
+        throw new Error(`Template '${templateName}' not found.`);
       }
       
-      // Add change event listener to save selection
-      select.addEventListener('change', saveModelSelections);
-    });
+      const text = await response.text();
+      const lines = text.trim().split('\n');
+      return lines.length;
+    } catch (error) {
+      console.error(`Error loading template: ${error}`);
+      throw error;
+    }
   }
   
-  // Add a new model select
-  function addModelSelect() {
-    const modelCount = modelInputs.children.length;
-    const newGroup = document.createElement('div');
-    newGroup.className = 'model-input-group';
-    
-    const label = document.createElement('label');
-    label.setAttribute('for', `model-${modelCount}`);
-    label.textContent = `Model ${modelCount + 1}:`;
-    
-    const select = document.createElement('select');
-    select.id = `model-${modelCount}`;
-    select.className = 'model-select';
-    
-    newGroup.appendChild(label);
-    newGroup.appendChild(select);
-    modelInputs.appendChild(newGroup);
-    
-    // Populate the new select
-    populateModelSelect(select, modelCount);
-    
-    // Add change event listener to save selection
-    select.addEventListener('change', saveModelSelections);
-    
-    // Save the updated model selections
-    saveModelSelections();
+  // Update model inputs based on template
+  async function updateModelInputs(templateName: string) {
+    try {
+      // Get the number of models from the template
+      const modelCount = await getTemplateModelCount(templateName);
+      currentTemplateModelCount = modelCount;
+      
+      // Clear existing model inputs
+      modelInputs.innerHTML = '';
+      
+      // Create the required number of model selects
+      for (let i = 0; i < modelCount; i++) {
+        const newGroup = document.createElement('div');
+        newGroup.className = 'model-input-group';
+        
+        const label = document.createElement('label');
+        label.setAttribute('for', `model-${i}`);
+        label.textContent = `Model ${i + 1}:`;
+        
+        const select = document.createElement('select');
+        select.id = `model-${i}`;
+        select.className = 'model-select';
+        
+        newGroup.appendChild(label);
+        newGroup.appendChild(select);
+        modelInputs.appendChild(newGroup);
+        
+        // Populate the select
+        populateModelSelect(select, i);
+      }
+    } catch (error) {
+      // Display error message
+      addOutputMessage('System', `Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   
   // Populate a single model select
   function populateModelSelect(select: HTMLSelectElement, index?: number) {
+    select.innerHTML = '';
+    
     // Add CLI option
     const cliOption = document.createElement('option');
     cliOption.value = 'cli';
@@ -229,25 +223,23 @@ document.addEventListener('DOMContentLoaded', () => {
       if (savedTemplateSelection && templates.includes(savedTemplateSelection)) {
         templateSelect.value = savedTemplateSelection;
       }
+      
+      // Update model inputs based on selected template
+      await updateModelInputs(templateSelect.value);
     } catch (error) {
       console.error('Error loading templates:', error);
       addOutputMessage('System', 'Error loading templates. Please check the console for details.');
     }
   }
   
+  // Save template selection when changed and update model inputs
+  templateSelect.addEventListener('change', async () => {
+    saveToLocalStorage('templateSelection', templateSelect.value);
+    await updateModelInputs(templateSelect.value);
+  });
+  
   // Initialize UI
-  populateModelSelects();
   populateTemplateSelect();
-  
-  // Add additional model selects if needed based on saved selections
-  if (savedModelSelections && savedModelSelections.length > modelSelects.length) {
-    for (let i = modelSelects.length; i < savedModelSelections.length; i++) {
-      addModelSelect();
-    }
-  }
-  
-  // Handle add model button
-  addModelButton.addEventListener('click', addModelSelect);
   
   // Handle start/stop conversation button
   startButton.addEventListener('click', handleStartStopButton);
@@ -275,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
       startButton.textContent = 'Start Conversation';
       startButton.classList.remove('stop');
       exportButton.style.display = 'block';
-      addModelButton.disabled = false;
     }
   }
   
@@ -344,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clear previous output
     conversationOutput.innerHTML = '';
     
-    // Get all model selects (including dynamically added ones)
+    // Get all model selects
     const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
     
     // Get selected models
@@ -400,15 +391,20 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update UI to show we're in conversation mode
       startButton.textContent = 'Stop Conversation';
       startButton.classList.add('stop');
-      addModelButton.disabled = true;
       isConversationRunning = true;
+      
+      // Verify template exists and has the correct number of models
+      try {
+        const templateModelCount = await getTemplateModelCount(templateName);
+        if (templateModelCount !== models.length) {
+          throw new Error(`Invalid template: Number of models (${models.length}) does not match the number of elements in the template (${templateModelCount})`);
+        }
+      } catch (error) {
+        throw new Error(`Invalid template: ${error instanceof Error ? error.message : String(error)}`);
+      }
       
       // Load template config
       const configs = await loadTemplate(templateName, models);
-      
-      if (configs.length !== models.length) {
-        throw new Error(`Number of models (${models.length}) does not match the number of elements in the template (${configs.length})`);
-      }
       
       // Extract system prompts and contexts
       const systemPrompts = configs.map(config => config.system_prompt || null);
@@ -432,7 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
       startButton.textContent = 'Start Conversation';
       startButton.classList.remove('stop');
       exportButton.style.display = 'block';
-      addModelButton.disabled = false;
     } catch (error) {
       console.error('Error starting conversation:', error);
       addOutputMessage('System', `Error: ${error instanceof Error ? error.message : String(error)}`);
@@ -441,7 +436,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isConversationRunning = false;
       startButton.textContent = 'Start Conversation';
       startButton.classList.remove('stop');
-      addModelButton.disabled = false;
       exportButton.style.display = 'block';
     }
   }
