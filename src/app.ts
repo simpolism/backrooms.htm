@@ -58,10 +58,31 @@ document.addEventListener('DOMContentLoaded', () => {
   wordWrapToggle.checked = savedWordWrap === 'true';
   conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
 
-  // Save API keys when changed
-  anthropicKeyInput.addEventListener('change', () => saveToLocalStorage('anthropicApiKey', anthropicKeyInput.value));
-  openaiKeyInput.addEventListener('change', () => saveToLocalStorage('openaiApiKey', openaiKeyInput.value));
-  hyperbolicKeyInput.addEventListener('change', () => saveToLocalStorage('hyperbolicApiKey', hyperbolicKeyInput.value));
+  // Function to refresh model selects when API keys change
+  function refreshModelSelects() {
+    const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
+    allModelSelects.forEach((select, index) => {
+      const selectedValue = select.value;
+      populateModelSelect(select, index);
+      select.value = selectedValue;
+    });
+  }
+
+  // Save API keys when changed and refresh model selects
+  anthropicKeyInput.addEventListener('change', () => {
+    saveToLocalStorage('anthropicApiKey', anthropicKeyInput.value);
+    refreshModelSelects();
+  });
+  
+  openaiKeyInput.addEventListener('change', () => {
+    saveToLocalStorage('openaiApiKey', openaiKeyInput.value);
+    refreshModelSelects();
+  });
+  
+  hyperbolicKeyInput.addEventListener('change', () => {
+    saveToLocalStorage('hyperbolicApiKey', hyperbolicKeyInput.value);
+    refreshModelSelects();
+  });
   
   // Font size control event handlers
   decreaseFontSizeBtn.addEventListener('click', () => {
@@ -194,11 +215,46 @@ document.addEventListener('DOMContentLoaded', () => {
   function populateModelSelect(select: HTMLSelectElement, index?: number) {
     select.innerHTML = '';
 
+    // Get current API keys
+    const apiKeys = {
+      anthropic: anthropicKeyInput.value,
+      openai: openaiKeyInput.value,
+      hyperbolic: hyperbolicKeyInput.value
+    };
+
     // Add model options
     Object.keys(MODEL_INFO).forEach(modelKey => {
+      const modelInfo = MODEL_INFO[modelKey];
+      const company = modelInfo.company;
+      
+      // Create option element
       const option = document.createElement('option');
       option.value = modelKey;
-      option.textContent = `${MODEL_INFO[modelKey].display_name} (${modelKey})`;
+      
+      // Determine if this model's API key is available
+      let apiKeyAvailable = false;
+      let apiKeyName = '';
+      
+      if (company === 'anthropic') {
+        apiKeyAvailable = !!apiKeys.anthropic;
+        apiKeyName = 'Anthropic';
+      } else if (company === 'openai') {
+        apiKeyAvailable = !!apiKeys.openai;
+        apiKeyName = 'OpenAI';
+      } else if (company === 'hyperbolic_completion') {
+        apiKeyAvailable = !!apiKeys.hyperbolic;
+        apiKeyName = 'Hyperbolic';
+      }
+      
+      // Set option text with API key info
+      option.textContent = `${modelInfo.display_name} (${modelKey}) - ${apiKeyName}`;
+      
+      // Add a visual indicator if API key is missing
+      if (!apiKeyAvailable) {
+        option.textContent += ' [API Key Missing]';
+        option.style.color = '#999';
+      }
+      
       select.appendChild(option);
     });
     
@@ -656,7 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
         requiredApis['anthropicApiKey'] = 'Anthropic API Key';
       } else if (company === 'openai') {
         requiredApis['openaiApiKey'] = 'OpenAI API Key';
-      } else if (company.startsWith('hyperbolic')) {
+      } else if (company === 'hyperbolic_completion') {
         requiredApis['hyperbolicApiKey'] = 'Hyperbolic API Key';
       }
     }

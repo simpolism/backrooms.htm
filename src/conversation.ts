@@ -13,31 +13,36 @@ export function generateModelResponse(
   systemPrompt: string | null,
   apiKeys: ApiKeys
 ): Promise<string> {
-  // TODO: this should be by company and model, not just model name
-  if (model.startsWith('claude-')) {
+  // Determine which API to use based on the company
+  const modelInfo = MODEL_INFO[model];
+  const company = modelInfo.company;
+  
+  if (company === 'anthropic') {
     return claudeConversation(
       actor,
-      model,
+      modelInfo.api_name,
       context,
       systemPrompt,
       apiKeys.anthropicApiKey
     );
-  } else if (model.startsWith('meta-llama/Meta-Llama-3.1-405B')) {
+  } else if (company === 'hyperbolic_completion') {
     return hyperbolicCompletionConversation(
       actor,
-      model,
+      modelInfo.api_name,
       context,
       systemPrompt,
       apiKeys.hyperbolicApiKey
     );
-  } else {
+  } else if (company === 'openai') {
     return gpt4Conversation(
       actor,
-      model,
+      modelInfo.api_name,
       context,
       systemPrompt,
       apiKeys.openaiApiKey
     );
+  } else {
+    throw new Error(`Unsupported model company: ${company}`);
   }
 }
 
