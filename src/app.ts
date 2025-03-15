@@ -15,6 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const addModelButton = document.getElementById('add-model') as HTMLButtonElement;
   const modelInputs = document.getElementById('model-inputs') as HTMLDivElement;
   
+  // Font size and word wrap controls
+  const decreaseFontSizeBtn = document.getElementById('decrease-font-size') as HTMLButtonElement;
+  const increaseFontSizeBtn = document.getElementById('increase-font-size') as HTMLButtonElement;
+  const currentFontSizeSpan = document.getElementById('current-font-size') as HTMLSpanElement;
+  const wordWrapToggle = document.getElementById('word-wrap-toggle') as HTMLInputElement;
+  
   // Initialize collapsible sections
   const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
   collapsibleHeaders.forEach(header => {
@@ -39,12 +45,70 @@ document.addEventListener('DOMContentLoaded', () => {
   openaiKeyInput.value = loadFromLocalStorage('openaiApiKey', '');
   hyperbolicKeyInput.value = loadFromLocalStorage('hyperbolicApiKey', '');
   worldInterfaceKeyInput.value = loadFromLocalStorage('worldInterfaceKey', '');
+  
+  // Load saved font size and word wrap settings
+  const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
+  const savedWordWrap = loadFromLocalStorage('outputWordWrap', 'true');
+  
+  // Initialize font size and word wrap with saved values
+  let currentFontSize = parseInt(savedFontSize);
+  currentFontSizeSpan.textContent = `${currentFontSize}px`;
+  conversationOutput.style.fontSize = `${currentFontSize}px`;
+  
+  // Initialize word wrap with saved value
+  wordWrapToggle.checked = savedWordWrap === 'true';
+  conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
 
   // Save API keys when changed
   anthropicKeyInput.addEventListener('change', () => saveToLocalStorage('anthropicApiKey', anthropicKeyInput.value));
   openaiKeyInput.addEventListener('change', () => saveToLocalStorage('openaiApiKey', openaiKeyInput.value));
   hyperbolicKeyInput.addEventListener('change', () => saveToLocalStorage('hyperbolicApiKey', hyperbolicKeyInput.value));
   worldInterfaceKeyInput.addEventListener('change', () => saveToLocalStorage('worldInterfaceKey', worldInterfaceKeyInput.value));
+  
+  // Font size control event handlers
+  decreaseFontSizeBtn.addEventListener('click', () => {
+    if (currentFontSize > 8) {
+      currentFontSize -= 2;
+      updateFontSize();
+    }
+  });
+  
+  increaseFontSizeBtn.addEventListener('click', () => {
+    if (currentFontSize < 32) {
+      currentFontSize += 2;
+      updateFontSize();
+    }
+  });
+  
+  // Update font size and save to localStorage
+  function updateFontSize() {
+    currentFontSizeSpan.textContent = `${currentFontSize}px`;
+    conversationOutput.style.fontSize = `${currentFontSize}px`;
+    saveToLocalStorage('outputFontSize', currentFontSize.toString());
+  }
+  
+  // Word wrap toggle event handler
+  wordWrapToggle.addEventListener('change', () => {
+    updateWordWrap();
+  });
+  
+  // Also add click handler to the toggle switch container for better usability
+  const toggleSwitch = wordWrapToggle.closest('.toggle-switch') as HTMLElement;
+  if (toggleSwitch) {
+    toggleSwitch.addEventListener('click', (e) => {
+      // Prevent double triggering when clicking directly on the checkbox
+      if (e.target !== wordWrapToggle) {
+        wordWrapToggle.checked = !wordWrapToggle.checked;
+        updateWordWrap();
+      }
+    });
+  }
+  
+  // Update word wrap and save to localStorage
+  function updateWordWrap() {
+    conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
+    saveToLocalStorage('outputWordWrap', wordWrapToggle.checked.toString());
+  }
   
   // Load saved model and template selections if available
   const savedModelSelections = loadFromLocalStorage('modelSelections', []);

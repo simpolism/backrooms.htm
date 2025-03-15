@@ -127,6 +127,94 @@ button:active {
 .conversation-output {
   font-family: 'Courier New', Courier, monospace;
   white-space: pre-wrap;
+  font-size: 14px; /* Default font size */
+}
+
+/* Output settings styles */
+.output-settings {
+  margin-bottom: 15px;
+  border: 1px solid #000000;
+  padding: 10px;
+  background-color: #EEEEEE;
+}
+
+.output-setting-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.output-setting-group label {
+  margin-bottom: 0;
+  margin-right: 10px;
+  min-width: 80px;
+}
+
+.font-size-controls {
+  display: flex;
+  align-items: center;
+}
+
+.font-size-btn {
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  margin: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+#current-font-size {
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Toggle switch styles */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #CCCCCC;
+  border: 1px solid #000000;
+  transition: .4s;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border: 1px solid #000000;
+  transition: .4s;
+}
+
+input:checked + .toggle-slider {
+  background-color: #AAAAAA;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(18px);
 }
 
 .actor-response {
