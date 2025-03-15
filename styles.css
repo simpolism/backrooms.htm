@@ -1,151 +1,127 @@
-:root {
-  --primary-color: #4a6fa5;
-  --secondary-color: #6c757d;
-  --light-color: #f8f9fa;
-  --dark-color: #343a40;
-  --success-color: #28a745;
-  --danger-color: #dc3545;
-  --border-color: #dee2e6;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  line-height: 1.6;
-  color: var(--dark-color);
-  background-color: var(--light-color);
+  font-family: Times New Roman, serif;
+  background-color: #FFFFFF;
+  color: #000000;
+  margin: 20px;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 1rem;
+  border: 1px solid #000000;
+  padding: 10px;
+  background-color: #FFFFFF;
 }
 
 header {
-  margin-bottom: 2rem;
+  margin-bottom: 20px;
+  text-align: center;
+  border-bottom: 1px solid #000000;
+  padding-bottom: 10px;
+}
+
+h1 {
+  font-size: 24px;
   text-align: center;
 }
 
-h1, h2 {
-  margin-bottom: 1rem;
+h2 {
+  font-size: 18px;
+  margin-top: 15px;
+  margin-bottom: 10px;
 }
 
 .settings-panel {
-  background-color: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #EEEEEE;
+  border: 1px solid #000000;
+  padding: 15px;
+  margin-bottom: 20px;
 }
 
 .api-keys, .model-selection, .template-selection {
-  margin-bottom: 1.5rem;
+  margin-bottom: 15px;
 }
 
 .input-group {
-  margin-bottom: 1rem;
+  margin-bottom: 10px;
 }
 
 label {
   display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
+  margin-bottom: 5px;
 }
 
 input, select {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: 1rem;
+  padding: 3px;
+  border: 1px solid #000000;
+  font-size: 14px;
+  background-color: #FFFFFF;
 }
 
 button {
   cursor: pointer;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  background-color: var(--secondary-color);
-  color: white;
-  transition: background-color 0.2s;
+  padding: 5px 10px;
+  border: 2px outset #CCCCCC;
+  font-size: 14px;
+  background-color: #CCCCCC;
+  color: #000000;
 }
 
-button:hover {
-  background-color: #5a6268;
+button:active {
+  border-style: inset;
 }
 
 .button-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 5px;
 }
 
 .primary-button {
-  background-color: var(--primary-color);
+  background-color: #CCCCCC;
   display: block;
   width: 100%;
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.primary-button:hover {
-  background-color: #3b5998;
+  padding: 5px;
+  font-size: 14px;
 }
 
 .primary-button.stop {
-  background-color: var(--danger-color);
-}
-
-.primary-button.stop:hover {
-  background-color: #c82333;
+  background-color: #FF0000;
+  color: #FFFFFF;
 }
 
 .secondary-button {
-  background-color: var(--success-color);
+  background-color: #CCCCCC;
   display: block;
   width: 100%;
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.secondary-button:hover {
-  background-color: #218838;
+  padding: 5px;
+  font-size: 14px;
 }
 
 .model-inputs {
-  margin-bottom: 1rem;
+  margin-bottom: 10px;
 }
 
 .model-input-group {
   display: flex;
-  margin-bottom: 0.5rem;
+  margin-bottom: 5px;
   align-items: center;
 }
 
 .model-input-group label {
   margin-bottom: 0;
-  margin-right: 1rem;
+  margin-right: 10px;
   min-width: 80px;
 }
 
 .conversation-container {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: white;
+  border: 1px solid #000000;
+  background-color: #FFFFFF;
   min-height: 400px;
   max-height: 600px;
   overflow-y: auto;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 10px;
 }
 
 .conversation-output {
@@ -154,20 +130,19 @@ button:hover {
 }
 
 .actor-response {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #CCCCCC;
 }
 
 .actor-header {
   font-weight: bold;
-  margin-bottom: 0.5rem;
+  margin-bottom: 5px;
 }
 
 /* Collapsible section styles */
 .collapsible-section {
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border: 1px solid #000000;
   overflow: hidden;
 }
 
@@ -175,18 +150,20 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
+  padding: 5px 10px;
+  background-color: #CCCCCC;
   cursor: pointer;
   user-select: none;
 }
 
 .collapsible-header h2 {
   margin-bottom: 0;
+  margin-top: 0;
+  font-size: 16px;
 }
 
 .collapse-indicator {
-  font-size: 0.8rem;
+  font-size: 12px;
   transition: transform 0.3s ease;
 }
 
@@ -195,7 +172,7 @@ button:hover {
 }
 
 .collapsible-content {
-  padding: 1rem;
+  padding: 10px;
   transition: max-height 0.3s ease, opacity 0.3s ease;
   max-height: 1000px;
   opacity: 1;
@@ -207,4 +184,13 @@ button:hover {
   opacity: 0;
   padding-top: 0;
   padding-bottom: 0;
+}
+
+/* Remove animation for API keys dropdown */
+.api-keys .collapsible-content {
+  transition: none;
+}
+
+.api-keys .collapse-indicator {
+  transition: none;
 }
