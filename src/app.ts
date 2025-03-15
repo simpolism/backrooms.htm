@@ -996,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addOutputMessage
       );
       
-      addOutputMessage('System', 'Starting conversation...');
+      addOutputMessage('System', `Starting conversation with template "${templateName}"...`);
       await activeConversation.start();
       
       // Conversation ended naturally
