@@ -93,6 +93,7 @@ export async function gpt4Conversation(
   }
 }
 
+// Not usable on llama3.1, but maybe usable with other models?
 export async function hyperbolicConversation(
   actor: string,
   model: string,

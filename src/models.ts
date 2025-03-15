@@ -39,7 +39,7 @@ export const MODEL_INFO: Record<string, ModelInfo> = {
   "405b-instruct": {
     "api_name": "meta-llama/Meta-Llama-3.1-405B-Instruct",
     "display_name": "I-405",
-    "company": "hyperbolic",
+    "company": "hyperbolic_completion",
   },
   "405b-base": {
     "api_name": "meta-llama/Meta-Llama-3.1-405B",

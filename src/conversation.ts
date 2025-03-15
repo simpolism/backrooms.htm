@@ -3,7 +3,6 @@ import { MODEL_INFO } from './models';
 import { 
   claudeConversation,
   gpt4Conversation,
-  hyperbolicConversation,
   hyperbolicCompletionConversation,
 } from './api';
 
@@ -14,6 +13,7 @@ export function generateModelResponse(
   systemPrompt: string | null,
   apiKeys: ApiKeys
 ): Promise<string> {
+  // TODO: this should be by company and model, not just model name
   if (model.startsWith('claude-')) {
     return claudeConversation(
       actor,
@@ -21,14 +21,6 @@ export function generateModelResponse(
       context,
       systemPrompt,
       apiKeys.anthropicApiKey
-    );
-  } else if (model.startsWith('meta-llama/Meta-Llama-3.1-405B-Instruct')) {
-    return hyperbolicCompletionConversation(
-      actor,
-      model,
-      context,
-      systemPrompt,
-      apiKeys.hyperbolicApiKey
     );
   } else if (model.startsWith('meta-llama/Meta-Llama-3.1-405B')) {
     return hyperbolicCompletionConversation(
