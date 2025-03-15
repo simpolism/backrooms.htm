@@ -14,7 +14,8 @@ export function generateModelResponse(
   context: Message[],
   systemPrompt: string | null,
   apiKeys: ApiKeys,
-  modelIndex?: number // Add this parameter
+  maxOutputLength: number = 1024,
+  modelIndex?: number
 ): Promise<string> {
   // Determine which API to use based on the company
   const company = modelInfo.company;
@@ -25,7 +26,8 @@ export function generateModelResponse(
       modelInfo.api_name,
       context,
       systemPrompt,
-      apiKeys.anthropicApiKey
+      apiKeys.anthropicApiKey,
+      maxOutputLength
     );
   } else if (company === 'hyperbolic_completion') {
     return hyperbolicCompletionConversation(
@@ -33,7 +35,8 @@ export function generateModelResponse(
       modelInfo.api_name,
       context,
       systemPrompt,
-      apiKeys.hyperbolicApiKey
+      apiKeys.hyperbolicApiKey,
+      maxOutputLength
     );
   } else if (company === 'openai') {
     return gpt4Conversation(
@@ -41,7 +44,8 @@ export function generateModelResponse(
       modelInfo.api_name,
       context,
       systemPrompt,
-      apiKeys.openaiApiKey
+      apiKeys.openaiApiKey,
+      maxOutputLength
     );
   } else if (company === 'openrouter') {
     // If this is the custom OpenRouter model, use the saved API name
@@ -66,7 +70,8 @@ export function generateModelResponse(
       apiName,
       context,
       systemPrompt,
-      apiKeys.openrouterApiKey
+      apiKeys.openrouterApiKey,
+      maxOutputLength
     );
   } else {
     throw new Error(`Unsupported model company: ${company}`);
@@ -82,6 +87,7 @@ export class Conversation {
   private outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void;
   private isRunning: boolean = false;
   private maxTurns: number;
+  private maxOutputLength: number;
   private currentTurn: number = 0;
 
   constructor(
@@ -90,6 +96,7 @@ export class Conversation {
     contexts: Message[][],
     apiKeys: ApiKeys,
     maxTurns: number = Infinity,
+    maxOutputLength: number = 1024,
     outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void
   ) {
     this.models = models;
@@ -97,6 +104,7 @@ export class Conversation {
     this.contexts = contexts;
     this.apiKeys = apiKeys;
     this.maxTurns = maxTurns;
+    this.maxOutputLength = maxOutputLength;
     this.outputCallback = outputCallback;
     
     // Generate model display names
@@ -140,6 +148,7 @@ export class Conversation {
           this.contexts[i],
           this.systemPrompts[i],
           this.apiKeys,
+          this.maxOutputLength,
           i // Pass the model index
         );
         

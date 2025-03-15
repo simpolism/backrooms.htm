@@ -5,7 +5,8 @@ export async function openrouterConversation(
   model: string,
   context: Message[],
   systemPrompt: string | null,
-  openrouterKey: string
+  openrouterKey: string,
+  maxTokens: number = 1024
 ): Promise<string> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
   
@@ -18,7 +19,7 @@ export async function openrouterConversation(
     model,
     messages,
     temperature: 1.0,
-    max_tokens: 1024
+    max_tokens: maxTokens
   };
 
   try {
@@ -50,13 +51,14 @@ export async function claudeConversation(
   model: string,
   context: Message[],
   systemPrompt: string | null,
-  anthropicKey: string
+  anthropicKey: string,
+  maxTokens: number = 1024
 ): Promise<string> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
 
   const requestBody: any = {
     model,
-    max_tokens: 1024,
+    max_tokens: maxTokens,
     temperature: 1.0,
     messages
   };
@@ -94,7 +96,8 @@ export async function gpt4Conversation(
   model: string,
   context: Message[],
   systemPrompt: string | null,
-  openaiKey: string
+  openaiKey: string,
+  maxTokens: number = 1024
 ): Promise<string> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
 
@@ -113,7 +116,7 @@ export async function gpt4Conversation(
     model,
     messages,
     temperature: 1.0,
-    max_completion_tokens: model.includes('o1') ? 4000 : 1024
+    max_completion_tokens: maxTokens
   };
 
   try {
@@ -144,7 +147,8 @@ export async function hyperbolicConversation(
   model: string,
   context: Message[],
   systemPrompt: string | null,
-  hyperbolicKey: string
+  hyperbolicKey: string,
+  maxTokens: number = 1024
 ): Promise<string> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
   
@@ -162,7 +166,7 @@ export async function hyperbolicConversation(
     model,
     messages,
     temperature: 1.0,
-    max_tokens: 1024
+    max_tokens: maxTokens
   };
 
   try {
@@ -189,7 +193,8 @@ export async function hyperbolicCompletionConversation(
   model: string,
   context: Message[],
   systemPrompt: string | null,
-  hyperbolicKey: string
+  hyperbolicKey: string,
+  maxTokens: number = 1024
 ): Promise<string> {
   // only use messages for system prompt, as llama base prefers a completion prompt
   const messages = [];
@@ -219,7 +224,7 @@ export async function hyperbolicCompletionConversation(
     model,
     messages,
     temperature: 1.0,
-    max_tokens: 1024,
+    max_tokens: maxTokens,
     prompt,
   };
 

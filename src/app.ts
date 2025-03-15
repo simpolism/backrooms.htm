@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize UI elements
   const templateSelect = document.getElementById('template-select') as HTMLSelectElement;
   const maxTurnsInput = document.getElementById('max-turns') as HTMLInputElement;
+  const maxOutputLengthInput = document.getElementById('max-output-length') as HTMLInputElement;
   const startButton = document.getElementById('start-conversation') as HTMLButtonElement;
   const exportButton = document.getElementById('export-conversation') as HTMLButtonElement;
   const conversationOutput = document.getElementById('conversation-output') as HTMLDivElement;
@@ -47,6 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
   openaiKeyInput.value = loadFromLocalStorage('openaiApiKey', '');
   hyperbolicKeyInput.value = loadFromLocalStorage('hyperbolicApiKey', '');
   openrouterKeyInput.value = loadFromLocalStorage('openrouterApiKey', '');
+  
+  // Load saved max output length if available
+  maxOutputLengthInput.value = loadFromLocalStorage('maxOutputLength', '1024');
   
   // Load saved font size and word wrap settings
   const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
@@ -543,6 +547,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // Save max output length when changed and enforce limits
+  maxOutputLengthInput.addEventListener('change', () => {
+    let value = parseInt(maxOutputLengthInput.value);
+    // Ensure the value is within the valid range
+    value = Math.max(1, Math.min(value, 1024));
+    maxOutputLengthInput.value = value.toString();
+    saveToLocalStorage('maxOutputLength', value.toString());
+  });
+  
   // Save template selection when changed and update model inputs
   templateSelect.addEventListener('change', async () => {
     saveToLocalStorage('templateSelection', templateSelect.value);
@@ -955,6 +968,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get max turns
     const maxTurns = maxTurnsInput.value ? parseInt(maxTurnsInput.value) : Infinity;
     
+    // Get max output length (limited to 1-1024)
+    let maxOutputLength = maxOutputLengthInput.value ? parseInt(maxOutputLengthInput.value) : 1024;
+    // Ensure the value is within the valid range
+    maxOutputLength = Math.max(1, Math.min(maxOutputLength, 1024));
+    
     // Get API keys
     const apiKeys: ApiKeys = {
       anthropicApiKey: anthropicKeyInput.value,
@@ -1022,6 +1040,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contexts,
         apiKeys,
         maxTurns,
+        maxOutputLength,
         addOutputMessage
       );
       

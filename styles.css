@@ -155,6 +155,15 @@ button:active {
   align-items: center;
 }
 
+/* Style for number inputs in output settings */
+.output-setting-input {
+  width: 120px;
+  padding: 3px;
+  border: 1px solid #000000;
+  font-size: 14px;
+  background-color: #FFFFFF;
+}
+
 .font-size-btn {
   width: 25px;
   height: 25px;
