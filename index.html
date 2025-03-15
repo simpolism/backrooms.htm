@@ -3,13 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>backrooms.htm</title>
+  <title>backrooms.directory</title>
+  <script>
+    // Make the header a link to the current page
+    document.addEventListener('DOMContentLoaded', function() {
+      const headerTitle = document.querySelector('header h1');
+      if (headerTitle) {
+        headerTitle.innerHTML = '<a href="' + window.location.href + '" style="text-decoration: none; color: inherit;">backrooms.directory</a>';
+      }
+    });
+  </script>
   <!-- CSS will be injected by webpack -->
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>backrooms.htm</h1>
+      <h1>backrooms.directory</h1>
       <hr>
     </header>
     
@@ -21,20 +30,27 @@
         </div>
         <div class="collapsible-content">
           <div class="input-group">
-            <label for="anthropic-key">Anthropic API Key:</label>
-            <input type="password" id="anthropic-key" placeholder="Enter Anthropic API Key">
+            <label for="openrouter-key">OpenRouter API Key:</label>
+            <input type="password" id="openrouter-key" placeholder="Enter OpenRouter API Key">
+            <a href="https://openrouter.ai/keys" target="_blank" class="api-key-link">Get OpenRouter API Key</a>
           </div>
-          <div class="input-group">
-            <label for="openai-key">OpenAI API Key:</label>
-            <input type="password" id="openai-key" placeholder="Enter OpenAI API Key">
-          </div>
+          
           <div class="input-group">
             <label for="hyperbolic-key">Hyperbolic API Key:</label>
             <input type="password" id="hyperbolic-key" placeholder="Enter Hyperbolic API Key">
+            <a href="https://app.hyperbolic.xyz/settings" target="_blank" class="api-key-link">Get Hyperbolic API Key</a>
           </div>
+          
           <div class="input-group">
-            <label for="openrouter-key">OpenRouter API Key:</label>
-            <input type="password" id="openrouter-key" placeholder="Enter OpenRouter API Key">
+            <label for="anthropic-key">Anthropic API Key:</label>
+            <input type="password" id="anthropic-key" placeholder="Enter Anthropic API Key">
+            <a href="https://console.anthropic.com/settings/keys" target="_blank" class="api-key-link">Get Anthropic API Key</a>
+          </div>
+          
+          <div class="input-group">
+            <label for="openai-key">OpenAI API Key:</label>
+            <input type="password" id="openai-key" placeholder="Enter OpenAI API Key">
+            <a href="https://platform.openai.com/api-keys" target="_blank" class="api-key-link">Get OpenAI API Key</a>
           </div>
         </div>
       </div>
@@ -141,7 +157,7 @@
     
     <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #666666;">
       <hr>
-      Last updated: March 2025 | Best viewed with 800x600 resolution | <a href="https://github.com/simpolism/backrooms.htm" target="_blank">GitHub</a>
+      Last updated: March 2025 | <a href="https://github.com/simpolism/backrooms.directory" target="_blank">GitHub</a>
     </div>
   </div>
   

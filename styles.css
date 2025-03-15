@@ -340,6 +340,23 @@ input:checked + .toggle-slider:before {
   font-weight: bold;
 }
 
+/* API Key Link Style */
+.api-key-link {
+  display: block;
+  font-size: 12px;
+  margin-top: 3px;
+  color: #0000FF;
+  text-decoration: underline;
+}
+
+.api-key-link:visited {
+  color: #800080;
+}
+
+.api-key-link:hover {
+  text-decoration: none;
+}
+
 /* OpenRouter Autocomplete Styles */
 .openrouter-autocomplete-container {
   position: relative;
@@ -424,6 +441,11 @@ input:checked + .toggle-slider:before {
   #custom-template-status button {
     margin-top: 10px;
     width: 100%;
+  }
+  
+  .api-key-link {
+    font-size: 11px;
+    margin-top: 2px;
   }
   
   .openrouter-autocomplete-container {

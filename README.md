@@ -1,4 +1,4 @@
-# backrooms.htm
+# backrooms.directory
 
 This repo replicates Scott Viteri's "Universal Backrooms" (https://github.com/scottviteri/UniversalBackrooms) (specifically [cosmicoptima's fork](https://github.com/cosmicoptima/UniversalBackrooms)), itself a replication of Andy Ayrey's "Backrooms" (https://dreams-of-an-electric-mind.webflow.io/), rewritten in typescript and runnable in a browser, so you can watch the backrooms on mobile with your own API keys.
 
