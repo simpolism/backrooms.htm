@@ -29,6 +29,7 @@ export interface ApiKeys {
   anthropicApiKey: string;
   openaiApiKey: string;
   hyperbolicApiKey: string;
+  openrouterApiKey: string;
 }
 
 export interface CustomTemplate {

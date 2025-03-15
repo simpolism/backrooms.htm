@@ -46,4 +46,9 @@ export const MODEL_INFO: Record<string, ModelInfo> = {
     "display_name": "B-405",
     "company": "hyperbolic_completion",
   },
+  "gemini-flash": {
+    "api_name": "google/gemini-2.0-flash-001",
+    "display_name": "Gemini",
+    "company": "openrouter",
+  },
 };

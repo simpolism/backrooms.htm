@@ -39,11 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const anthropicKeyInput = document.getElementById('anthropic-key') as HTMLInputElement;
   const openaiKeyInput = document.getElementById('openai-key') as HTMLInputElement;
   const hyperbolicKeyInput = document.getElementById('hyperbolic-key') as HTMLInputElement;
+  const openrouterKeyInput = document.getElementById('openrouter-key') as HTMLInputElement;
 
   // Load saved API keys if available
   anthropicKeyInput.value = loadFromLocalStorage('anthropicApiKey', '');
   openaiKeyInput.value = loadFromLocalStorage('openaiApiKey', '');
   hyperbolicKeyInput.value = loadFromLocalStorage('hyperbolicApiKey', '');
+  openrouterKeyInput.value = loadFromLocalStorage('openrouterApiKey', '');
   
   // Load saved font size and word wrap settings
   const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
@@ -81,6 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   hyperbolicKeyInput.addEventListener('change', () => {
     saveToLocalStorage('hyperbolicApiKey', hyperbolicKeyInput.value);
+    refreshModelSelects();
+  });
+  
+  openrouterKeyInput.addEventListener('change', () => {
+    saveToLocalStorage('openrouterApiKey', openrouterKeyInput.value);
     refreshModelSelects();
   });
   
@@ -219,7 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiKeys = {
       anthropic: anthropicKeyInput.value,
       openai: openaiKeyInput.value,
-      hyperbolic: hyperbolicKeyInput.value
+      hyperbolic: hyperbolicKeyInput.value,
+      openrouter: openrouterKeyInput.value
     };
 
     // Add model options
@@ -244,6 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (company === 'hyperbolic_completion') {
         apiKeyAvailable = !!apiKeys.hyperbolic;
         apiKeyName = 'Hyperbolic';
+      } else if (company === 'openrouter') {
+        apiKeyAvailable = !!apiKeys.openrouter;
+        apiKeyName = 'OpenRouter';
       }
       
       // Set option text with API key info
@@ -701,6 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
       anthropicApiKey: anthropicKeyInput.value,
       openaiApiKey: openaiKeyInput.value,
       hyperbolicApiKey: hyperbolicKeyInput.value,
+      openrouterApiKey: openrouterKeyInput.value,
     };
     
     // Validate required API keys
@@ -714,6 +726,8 @@ document.addEventListener('DOMContentLoaded', () => {
         requiredApis['openaiApiKey'] = 'OpenAI API Key';
       } else if (company === 'hyperbolic_completion') {
         requiredApis['hyperbolicApiKey'] = 'Hyperbolic API Key';
+      } else if (company === 'openrouter') {
+        requiredApis['openrouterApiKey'] = 'OpenRouter API Key';
       }
     }
     

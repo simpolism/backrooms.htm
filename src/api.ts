@@ -1,5 +1,50 @@
 import { Message } from './types';
 
+export async function openrouterConversation(
+  actor: string,
+  model: string,
+  context: Message[],
+  systemPrompt: string | null,
+  openrouterKey: string
+): Promise<string> {
+  const messages = context.map(m => ({ role: m.role, content: m.content }));
+  
+  // Add system prompt if provided
+  if (systemPrompt) {
+    messages.unshift({ role: 'system', content: systemPrompt });
+  }
+
+  const requestBody: any = {
+    model,
+    messages,
+    temperature: 1.0,
+    max_tokens: 1024
+  };
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openrouterKey}`,
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'Backrooms Chat'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error calling OpenRouter API:', error);
+    throw error;
+  }
+}
+
 export async function claudeConversation(
   actor: string,
   model: string,

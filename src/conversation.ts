@@ -1,20 +1,20 @@
-import { Message, ApiKeys } from './types';
+import { Message, ApiKeys, ModelInfo } from './types';
 import { MODEL_INFO } from './models';
-import { 
+import {
   claudeConversation,
   gpt4Conversation,
   hyperbolicCompletionConversation,
+  openrouterConversation,
 } from './api';
 
 export function generateModelResponse(
-  model: string,
+  modelInfo: ModelInfo,
   actor: string,
   context: Message[],
   systemPrompt: string | null,
   apiKeys: ApiKeys
 ): Promise<string> {
   // Determine which API to use based on the company
-  const modelInfo = MODEL_INFO[model];
   const company = modelInfo.company;
   
   if (company === 'anthropic') {
@@ -40,6 +40,14 @@ export function generateModelResponse(
       context,
       systemPrompt,
       apiKeys.openaiApiKey
+    );
+  } else if (company === 'openrouter') {
+    return openrouterConversation(
+      actor,
+      modelInfo.api_name,
+      context,
+      systemPrompt,
+      apiKeys.openrouterApiKey
     );
   } else {
     throw new Error(`Unsupported model company: ${company}`);
@@ -105,7 +113,7 @@ export class Conversation {
       
       try {
         response = await generateModelResponse(
-          MODEL_INFO[this.models[i]].api_name,
+          MODEL_INFO[this.models[i]],
           this.modelDisplayNames[i],
           this.contexts[i],
           this.systemPrompts[i],
