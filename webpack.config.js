@@ -19,10 +19,20 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
   },
   devServer: {
-    static: {
-      directory: path.join(__dirname, './')
-    },
+    static: [
+      {
+        directory: path.join(__dirname, './'),
+        publicPath: '/'
+      },
+      {
+        directory: path.join(__dirname, './public'),
+        publicPath: '/'
+      }
+    ],
     compress: true,
     port: 9000,
+    devMiddleware: {
+      publicPath: '/dist/'
+    }
   }
 };
