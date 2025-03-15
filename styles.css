@@ -340,6 +340,15 @@ input:checked + .toggle-slider:before {
   font-weight: bold;
 }
 
+/* API Key Disclaimer Style */
+.api-key-disclaimer {
+  font-size: 12px;
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #555555;
+  font-style: italic;
+}
+
 /* API Key Link Style */
 .api-key-link {
   display: block;
