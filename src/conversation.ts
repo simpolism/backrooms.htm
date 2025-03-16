@@ -157,7 +157,8 @@ export class Conversation {
     for (let i = 0; i < this.models.length; i++) {
       if (!this.isRunning) break;
       
-      // Check if conversation is paused
+      // Check if conversation is paused before starting a new API request
+      // This ensures we don't start new requests while paused
       while (this.isPaused && this.isRunning) {
         // Wait while paused
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -189,10 +190,9 @@ export class Conversation {
             currentResponse += chunk;
             this.currentResponses.set(responseId, currentResponse);
             
-            // Only update the UI if not paused
-            if (!this.isPaused) {
-              this.outputCallback(this.modelDisplayNames[i], currentResponse + "█", responseId, false);
-            }
+            // Always update the UI with new chunks, even when paused
+            // This ensures ongoing API requests continue to display output
+            this.outputCallback(this.modelDisplayNames[i], currentResponse + "█", responseId, false);
           }
         };
         
@@ -216,11 +216,17 @@ export class Conversation {
           this.stop();
           return;
         }
-        
         // Add response to all contexts
         for (let j = 0; j < this.contexts.length; j++) {
           const role = j === i ? 'assistant' : 'user';
           this.contexts[j].push({ role, content: response });
+        }
+        
+        // Check if conversation is paused after completing this model's request
+        // This ensures we don't immediately proceed to the next model while paused
+        while (this.isPaused && this.isRunning) {
+          // Wait while paused
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       } catch (error) {
         console.error(`Error in turn processing for ${this.modelDisplayNames[i]}:`, error);
