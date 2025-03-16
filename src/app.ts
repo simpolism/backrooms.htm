@@ -20,6 +20,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const conversationOutput = document.getElementById('conversation-output') as HTMLDivElement;
   const modelInputs = document.getElementById('model-inputs') as HTMLDivElement;
   
+  // Create load conversation button and file input
+  const loadButton = document.createElement('button');
+  loadButton.id = 'load-conversation';
+  loadButton.textContent = 'Select Conversation File';
+  loadButton.className = 'control-button';
+  
+  // Create hidden file input for loading conversation
+  const loadFileInput = document.createElement('input');
+  loadFileInput.type = 'file';
+  loadFileInput.id = 'load-conversation-file';
+  loadFileInput.accept = '.txt';
+  loadFileInput.style.display = 'none';
+  
   // Track current template model count
   let currentTemplateModelCount = 2; // Default to 2 models
   
@@ -153,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Load saved max output length if available
-  maxOutputLengthInput.value = loadFromLocalStorage('maxOutputLength', '1024');
+  maxOutputLengthInput.value = loadFromLocalStorage('maxOutputLength', '512');
   
   // Load saved font size and word wrap settings
   const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
@@ -756,8 +769,59 @@ document.addEventListener('DOMContentLoaded', () => {
   pauseButton.addEventListener('click', handlePauseButton);
   resumeButton.addEventListener('click', handleResumeButton);
   
+  // Add load file input to the document body
+  document.body.appendChild(loadFileInput);
+  
+  // Find the output settings section to add the load button
+  const outputSettingsContent = document.querySelector('.output-settings .collapsible-content');
+  if (outputSettingsContent) {
+    // Create a container for the load button similar to other output settings
+    const loadButtonGroup = document.createElement('div');
+    loadButtonGroup.className = 'output-setting-group';
+    
+    // Create a label for the load button
+    const loadButtonLabel = document.createElement('label');
+    loadButtonLabel.textContent = 'Load Conversation:';
+    
+    // Add the elements to the DOM
+    loadButtonGroup.appendChild(loadButtonLabel);
+    loadButtonGroup.appendChild(loadButton);
+    outputSettingsContent.appendChild(loadButtonGroup);
+  } else {
+    // Fallback if output settings section not found
+    exportButton.parentNode?.insertBefore(loadButton, exportButton.nextSibling);
+  }
+  
   // Handle export conversation button
   exportButton.addEventListener('click', exportConversation);
+  
+  // Handle load conversation button
+  loadButton.addEventListener('click', () => {
+    loadFileInput.click();
+  });
+  
+  // Handle file selection for loading conversation
+  loadFileInput.addEventListener('change', (event) => {
+    const files = (event.target as HTMLInputElement).files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      loadConversation(content);
+    };
+    
+    reader.onerror = () => {
+      addOutputMessage('System', 'Error: Failed to read the file.');
+    };
+    
+    reader.readAsText(file);
+    
+    // Reset file input
+    loadFileInput.value = '';
+  });
   
   // Initialize template editor
   function initializeTemplateEditor() {
@@ -1121,9 +1185,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update UI
       pauseButton.style.display = 'none';
       resumeButton.style.display = 'inline-block';
+      
+      // Ensure max turns, max output length, and load conversation button remain disabled
+      maxTurnsInput.disabled = true;
+      maxOutputLengthInput.disabled = true;
+      loadButton.disabled = true;
     }
   }
-  
+
   // Handle resume button click
   function handleResumeButton() {
     if (activeConversation && isConversationRunning) {
@@ -1132,6 +1201,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update UI
       pauseButton.style.display = 'inline-block';
       resumeButton.style.display = 'none';
+      
+      // Ensure max turns, max output length, and load conversation button remain disabled
+      maxTurnsInput.disabled = true;
+      maxOutputLengthInput.disabled = true;
+      loadButton.disabled = true;
     }
   }
   
@@ -1148,6 +1222,61 @@ document.addEventListener('DOMContentLoaded', () => {
       pauseButton.style.display = 'none';
       resumeButton.style.display = 'none';
       exportButton.style.display = 'block';
+      
+      // Re-enable max turns and max output length fields and load conversation button
+      maxTurnsInput.disabled = false;
+      maxOutputLengthInput.disabled = false;
+      loadButton.disabled = false;
+    }
+  }
+  
+  // Load conversation from a text file
+  function loadConversation(text: string) {
+    // Stop any active conversation
+    if (activeConversation && isConversationRunning) {
+      stopConversation();
+    }
+    
+    // Reset UI state
+    isConversationRunning = false;
+    startButton.textContent = 'Start Conversation';
+    startButton.classList.remove('stop');
+    pauseButton.style.display = 'none';
+    resumeButton.style.display = 'none';
+    
+    // Ensure max turns, max output length, and load conversation button are enabled
+    maxTurnsInput.disabled = false;
+    maxOutputLengthInput.disabled = false;
+    loadButton.disabled = false;
+    
+    // Clear existing conversation
+    conversationOutput.innerHTML = '';
+    
+    try {
+      // Use regex to find all message blocks
+      // Each message starts with a header line "### Actor [timestamp] ###"
+      const messageRegex = /### (.*?) \[(.*?)\] ###\n([\s\S]*?)(?=\n### |$)/g;
+      let match;
+      
+      while ((match = messageRegex.exec(text)) !== null) {
+        const actor = match[1];
+        const timestamp = match[2];
+        const content = match[3].trim();
+        
+        if (content) {
+          // Add the message to the UI
+          addOutputMessage(actor, content);
+        }
+      }
+      
+      // Show export button after loading
+      exportButton.style.display = 'block';
+      
+      // Add a system message indicating successful load
+      addOutputMessage('System', 'Conversation loaded successfully.');
+    } catch (error) {
+      console.error('Error parsing conversation:', error);
+      addOutputMessage('System', `Error loading conversation: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   
@@ -1249,9 +1378,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const maxTurns = maxTurnsInput.value ? parseInt(maxTurnsInput.value) : Infinity;
     
     // Get max output length (limited to 1-1024)
-    let maxOutputLength = maxOutputLengthInput.value ? parseInt(maxOutputLengthInput.value) : 1024;
+    let maxOutputLength = maxOutputLengthInput.value ? parseInt(maxOutputLengthInput.value) : 512;
     // Ensure the value is within the valid range
     maxOutputLength = Math.max(1, Math.min(maxOutputLength, 1024));
+    
+    // Disable max turns and max output length fields and load conversation button
+    // when conversation is in the "started" state (even if paused)
+    maxTurnsInput.disabled = true;
+    maxOutputLengthInput.disabled = true;
+    loadButton.disabled = true;
     
     // Get API keys
     const apiKeys: ApiKeys = {
@@ -1327,7 +1462,11 @@ document.addEventListener('DOMContentLoaded', () => {
       startButton.classList.remove('stop');
       pauseButton.style.display = 'none';
       exportButton.style.display = 'block';
-      exportButton.style.display = 'block';
+      
+      // Re-enable max turns and max output length fields and load conversation button
+      maxTurnsInput.disabled = false;
+      maxOutputLengthInput.disabled = false;
+      loadButton.disabled = false;
     } catch (error) {
       console.error('Error starting conversation:', error);
       addOutputMessage('System', `Error: ${error instanceof Error ? error.message : String(error)}`);
@@ -1339,6 +1478,11 @@ document.addEventListener('DOMContentLoaded', () => {
       pauseButton.style.display = 'none';
       resumeButton.style.display = 'none';
       exportButton.style.display = 'block';
+      
+      // Re-enable max turns and max output length fields and load conversation button
+      maxTurnsInput.disabled = false;
+      maxOutputLengthInput.disabled = false;
+      loadButton.disabled = false;
     }
   }
 });
