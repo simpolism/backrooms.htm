@@ -14,7 +14,8 @@ export function generateModelResponse(
   apiKeys: ApiKeys,
   maxOutputLength: number = 1024,
   modelIndex?: number,
-  onChunk?: StreamingCallback
+  onChunk?: StreamingCallback,
+  abortSignal?: AbortSignal
 ): Promise<string> {
   // Determine which API to use based on the company
   const company = modelInfo.company;
@@ -27,7 +28,8 @@ export function generateModelResponse(
       systemPrompt,
       apiKeys.hyperbolicApiKey,
       maxOutputLength,
-      onChunk
+      onChunk,
+      abortSignal
     );
   } else if (company === 'openrouter') {
     // If this is the custom OpenRouter model, use the saved API name
@@ -54,7 +56,8 @@ export function generateModelResponse(
       systemPrompt,
       apiKeys.openrouterApiKey,
       maxOutputLength,
-      onChunk
+      onChunk,
+      abortSignal
     );
   } else {
     throw new Error(`Unsupported model company: ${company}`);
@@ -73,6 +76,7 @@ export class Conversation {
   private maxOutputLength: number;
   private currentTurn: number = 0;
   private currentResponses: Map<string, string> = new Map(); // Track responses for each model
+  private abortController: AbortController | null = null; // For cancelling API requests
 
   constructor(
     models: string[],
@@ -98,6 +102,12 @@ export class Conversation {
   }
 
   public async start(): Promise<void> {
+    // Clean up any existing abort controller
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+    
     this.isRunning = true;
     this.currentTurn = 0;
     
@@ -114,9 +124,18 @@ export class Conversation {
 
   public stop(): void {
     this.isRunning = false;
+    
+    // Cancel any in-progress API requests
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
   }
 
   private async processTurn(): Promise<void> {
+    // Create a new AbortController for this turn
+    this.abortController = new AbortController();
+    
     for (let i = 0; i < this.models.length; i++) {
       if (!this.isRunning) break;
       
@@ -146,7 +165,7 @@ export class Conversation {
           }
         };
         
-        // Make the API call with streaming
+        // Make the API call with streaming and pass the abort signal
         const response = await generateModelResponse(
           MODEL_INFO[this.models[i]],
           this.modelDisplayNames[i],
@@ -155,7 +174,8 @@ export class Conversation {
           this.apiKeys,
           this.maxOutputLength,
           i, // Pass the model index
-          streamingCallback // Pass the streaming callback
+          streamingCallback, // Pass the streaming callback
+          this.abortController.signal // Pass the abort signal
         );
         
         // Check for conversation end signal
@@ -173,15 +193,26 @@ export class Conversation {
         }
       } catch (error) {
         console.error(`Error in turn processing for ${this.modelDisplayNames[i]}:`, error);
-        // Update with error message
-        this.outputCallback(
-          'System',
-          `Error: Failed to get response from ${this.modelDisplayNames[i]}`,
-          responseId,
-          false
-        );
-        this.stop();
+        
+        // Check if this was a cancelled request
+        if (error instanceof Error && error.message === 'Request cancelled') {
+          // For cancelled requests, keep the partial output but remove the cursor
+          const currentResponse = this.currentResponses.get(responseId) || "";
+          this.outputCallback(this.modelDisplayNames[i], currentResponse, responseId, false);
+        } else {
+          // For other errors, show the error message and stop the conversation
+          this.outputCallback(
+            'System',
+            `Error: Failed to get response from ${this.modelDisplayNames[i]}`,
+            responseId,
+            false
+          );
+          this.stop();
+        }
       }
     }
+    
+    // Clean up the abort controller after the turn is complete
+    this.abortController = null;
   }
 }

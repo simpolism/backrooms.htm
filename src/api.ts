@@ -56,8 +56,14 @@ async function processStream(
       }
     }
   } catch (error) {
-    console.error('Error reading stream:', error);
-    throw error;
+    // Check if this is an abort error (request was cancelled)
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.log('Stream reading was cancelled');
+      throw new Error('Request cancelled');
+    } else {
+      console.error('Error reading stream:', error);
+      throw error;
+    }
   }
   
   return fullText;
@@ -70,7 +76,8 @@ export async function openrouterConversation(
   systemPrompt: string | null,
   openrouterKey: string,
   maxTokens: number = 1024,
-  onChunk?: StreamingCallback
+  onChunk?: StreamingCallback,
+  abortSignal?: AbortSignal
 ): Promise<string> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
   
@@ -96,7 +103,8 @@ export async function openrouterConversation(
         'HTTP-Referer': window.location.origin,
         'X-Title': 'Backrooms Chat'
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      signal: abortSignal
     });
 
     if (!response.ok) {
@@ -113,8 +121,14 @@ export async function openrouterConversation(
       return data.choices[0].message.content;
     }
   } catch (error) {
-    console.error('Error calling OpenRouter API:', error);
-    throw error;
+    // Check if this is an abort error (request was cancelled)
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.log('OpenRouter API request was cancelled');
+      throw new Error('Request cancelled');
+    } else {
+      console.error('Error calling OpenRouter API:', error);
+      throw error;
+    }
   }
 }
 
@@ -125,7 +139,8 @@ export async function hyperbolicCompletionConversation(
   systemPrompt: string | null,
   hyperbolicKey: string,
   maxTokens: number = 1024,
-  onChunk?: StreamingCallback
+  onChunk?: StreamingCallback,
+  abortSignal?: AbortSignal
 ): Promise<string> {
   // only use messages for system prompt, as llama base prefers a completion prompt
   const messages = [];
@@ -164,7 +179,8 @@ export async function hyperbolicCompletionConversation(
     const response = await fetch('https://api.hyperbolic.xyz/v1/completions', {
       method: 'POST',
       headers,
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: abortSignal
     });
 
     if (!response.ok) {
@@ -181,7 +197,13 @@ export async function hyperbolicCompletionConversation(
       return data.choices[0].text.trim();
     }
   } catch (error) {
-    console.error('Error calling Hyperbolic Completion API:', error);
-    throw error;
+    // Check if this is an abort error (request was cancelled)
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.log('Hyperbolic Completion API request was cancelled');
+      throw new Error('Request cancelled');
+    } else {
+      console.error('Error calling Hyperbolic Completion API:', error);
+      throw error;
+    }
   }
 }
