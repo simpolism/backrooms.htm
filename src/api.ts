@@ -101,7 +101,7 @@ export async function openrouterConversation(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${openrouterKey}`,
         'HTTP-Referer': window.location.origin,
-        'X-Title': 'Backrooms Chat'
+        'X-Title': 'backrooms.directory'
       },
       body: JSON.stringify(requestBody),
       signal: abortSignal

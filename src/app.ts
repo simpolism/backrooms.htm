@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer': window.location.origin,
-          'X-Title': 'Backrooms Chat'
+          'X-Title': 'backrooms.directory'
         }
       });
 
@@ -758,6 +758,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const customTemplateName = document.getElementById('custom-template-name') as HTMLSpanElement;
     const editCustomTemplateBtn = document.getElementById('edit-custom-template') as HTMLButtonElement;
     
+    // Create a container for template editor error messages
+    const templateErrorContainer = document.createElement('div');
+    templateErrorContainer.className = 'template-error-container';
+    templateErrorContainer.style.display = 'none';
+    templateErrorContainer.style.marginTop = '15px';
+    templateErrorContainer.style.marginBottom = '15px';
+    templateErrorContainer.style.padding = '8px 10px';
+    templateErrorContainer.style.border = '1px solid #000000';
+    templateErrorContainer.style.fontSize = '14px';
+    templateErrorContainer.style.fontFamily = 'Times New Roman, serif';
+    templateErrorContainer.style.backgroundColor = '#EEEEEE';
+    templateErrorContainer.style.color = '#FF0000';
+    templateErrorContainer.style.position = 'relative';
+    templateErrorContainer.style.width = '100%';
+    templateErrorContainer.style.boxSizing = 'border-box';
+    
+    // Create dismiss button (X)
+    const dismissButton = document.createElement('button');
+    dismissButton.textContent = '×'; // × is the multiplication sign, looks like an X
+    dismissButton.style.position = 'absolute';
+    dismissButton.style.right = '5px';
+    dismissButton.style.top = '5px';
+    dismissButton.style.background = 'none';
+    dismissButton.style.border = 'none';
+    dismissButton.style.fontSize = '16px';
+    dismissButton.style.fontWeight = 'bold';
+    dismissButton.style.cursor = 'pointer';
+    dismissButton.style.padding = '0 5px';
+    dismissButton.style.lineHeight = '1';
+    dismissButton.title = 'Dismiss';
+    
+    // Create message element
+    const messageElement = document.createElement('div');
+    messageElement.style.paddingRight = '20px'; // Make room for the X button
+    
+    // Add elements to container
+    templateErrorContainer.appendChild(dismissButton);
+    templateErrorContainer.appendChild(messageElement);
+    
+    // Add container to the template editor form
+    templateEditorForm.appendChild(templateErrorContainer);
+    
+    // Add click handler to dismiss button
+    dismissButton.addEventListener('click', () => {
+      templateErrorContainer.style.display = 'none';
+    });
+    
+    // Function to show template error messages
+    function showTemplateError(message: string) {
+      messageElement.textContent = message;
+      templateErrorContainer.style.display = 'block';
+    }
+    
     // Check if custom template exists and update UI
     function updateCustomTemplateStatus() {
       const customTemplate = getCustomTemplate();
@@ -853,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
         templateEditorForm.style.display = 'block';
       } catch (error) {
         console.error('Error loading template for editing:', error);
-        addOutputMessage('System', `Error: ${error instanceof Error ? error.message : String(error)}`);
+        showTemplateError(`Error loading template: ${error instanceof Error ? error.message : String(error)}`);
       }
     });
     
@@ -891,12 +944,12 @@ document.addEventListener('DOMContentLoaded', () => {
           templateEditorForm.style.display = 'block';
         } catch (error) {
           console.error('Invalid JSONL file:', error);
-          addOutputMessage('System', 'Error: Invalid JSONL file. Please check the file format.');
+          showTemplateError('Invalid JSONL file. Please check the file format.');
         }
       };
       
       reader.onerror = () => {
-        addOutputMessage('System', 'Error: Failed to read the file.');
+        showTemplateError('Failed to read the file.');
       };
       
       reader.readAsText(file);
@@ -911,12 +964,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const content = templateContentTextarea.value.trim();
       
       if (!name) {
-        addOutputMessage('System', 'Error: Template name is required.');
+        showTemplateError('Template name is required.');
         return;
       }
       
       if (!content) {
-        addOutputMessage('System', 'Error: Template content is required.');
+        showTemplateError('Template content is required.');
         return;
       }
       
@@ -957,10 +1010,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const event = new Event('change');
         templateSelect.dispatchEvent(event);
         
-        addOutputMessage('System', `Custom template "${name}" saved.`);
+        // Show success message
+        showTemplateError(`Custom template "${name}" saved successfully.`);
       } catch (error) {
         console.error('Invalid JSONL content:', error);
-        addOutputMessage('System', 'Error: Invalid JSONL content. Please check the format.');
+        showTemplateError('Invalid JSONL content. Please check the format.');
       }
     });
     
@@ -970,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const content = templateContentTextarea.value.trim();
       
       if (!content) {
-        addOutputMessage('System', 'Error: No content to export.');
+        showTemplateError('No content to export.');
         return;
       }
       
@@ -1001,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
         templateSelect.dispatchEvent(event);
       }
       
-      addOutputMessage('System', 'Custom template cleared.');
+      showTemplateError('Custom template cleared.');
     };
     
     clearCustomTemplateBtn.addEventListener('click', handleClearCustomTemplate);
