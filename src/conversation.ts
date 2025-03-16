@@ -72,6 +72,7 @@ export class Conversation {
   private apiKeys: ApiKeys;
   private outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void;
   private isRunning: boolean = false;
+  private isPaused: boolean = false; // New state for pause functionality
   private maxTurns: number;
   private maxOutputLength: number;
   private currentTurn: number = 0;
@@ -124,6 +125,7 @@ export class Conversation {
 
   public stop(): void {
     this.isRunning = false;
+    this.isPaused = false;
     
     // Cancel any in-progress API requests
     if (this.abortController) {
@@ -132,11 +134,36 @@ export class Conversation {
     }
   }
 
+  public pause(): void {
+    if (this.isRunning && !this.isPaused) {
+      this.isPaused = true;
+    }
+  }
+
+  public resume(): void {
+    if (this.isPaused) {
+      this.isPaused = false;
+    }
+  }
+
+  public isPausedState(): boolean {
+    return this.isPaused;
+  }
+
   private async processTurn(): Promise<void> {
     // Create a new AbortController for this turn
     this.abortController = new AbortController();
     
     for (let i = 0; i < this.models.length; i++) {
+      if (!this.isRunning) break;
+      
+      // Check if conversation is paused
+      while (this.isPaused && this.isRunning) {
+        // Wait while paused
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // If we're no longer running after pause, break out
       if (!this.isRunning) break;
       
       // Create a unique ID for this response
@@ -161,7 +188,11 @@ export class Conversation {
             // Update with new chunk and cursor
             currentResponse += chunk;
             this.currentResponses.set(responseId, currentResponse);
-            this.outputCallback(this.modelDisplayNames[i], currentResponse + "█", responseId, false);
+            
+            // Only update the UI if not paused
+            if (!this.isPaused) {
+              this.outputCallback(this.modelDisplayNames[i], currentResponse + "█", responseId, false);
+            }
           }
         };
         

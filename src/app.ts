@@ -734,8 +734,27 @@ document.addEventListener('DOMContentLoaded', () => {
   populateTemplateSelect();
   initializeTemplateEditor();
   
-  // Handle start/stop conversation button
+  // Create pause/resume buttons
+  const pauseButton = document.createElement('button');
+  pauseButton.id = 'pause-conversation';
+  pauseButton.textContent = 'Pause';
+  pauseButton.className = 'control-button pause';
+  pauseButton.style.display = 'none';
+  
+  const resumeButton = document.createElement('button');
+  resumeButton.id = 'resume-conversation';
+  resumeButton.textContent = 'Resume';
+  resumeButton.className = 'control-button resume';
+  resumeButton.style.display = 'none';
+  
+  // Add buttons to the DOM after the start button
+  startButton.parentNode?.insertBefore(pauseButton, startButton.nextSibling);
+  pauseButton.parentNode?.insertBefore(resumeButton, pauseButton.nextSibling);
+  
+  // Handle button clicks
   startButton.addEventListener('click', handleStartStopButton);
+  pauseButton.addEventListener('click', handlePauseButton);
+  resumeButton.addEventListener('click', handleResumeButton);
   
   // Handle export conversation button
   exportButton.addEventListener('click', exportConversation);
@@ -1094,6 +1113,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // Handle pause button click
+  function handlePauseButton() {
+    if (activeConversation && isConversationRunning) {
+      activeConversation.pause();
+      
+      // Update UI
+      pauseButton.style.display = 'none';
+      resumeButton.style.display = 'inline-block';
+    }
+  }
+  
+  // Handle resume button click
+  function handleResumeButton() {
+    if (activeConversation && isConversationRunning) {
+      activeConversation.resume();
+      
+      // Update UI
+      pauseButton.style.display = 'inline-block';
+      resumeButton.style.display = 'none';
+    }
+  }
+  
   // Stop the active conversation
   function stopConversation() {
     if (activeConversation) {
@@ -1104,6 +1145,8 @@ document.addEventListener('DOMContentLoaded', () => {
       isConversationRunning = false;
       startButton.textContent = 'Start Conversation';
       startButton.classList.remove('stop');
+      pauseButton.style.display = 'none';
+      resumeButton.style.display = 'none';
       exportButton.style.display = 'block';
     }
   }
@@ -1245,6 +1288,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update UI to show we're in conversation mode
       startButton.textContent = 'Stop Conversation';
       startButton.classList.add('stop');
+      pauseButton.style.display = 'inline-block';
       isConversationRunning = true;
       
       // Verify template exists and has the correct number of models
@@ -1277,11 +1321,12 @@ document.addEventListener('DOMContentLoaded', () => {
       
       addOutputMessage('System', `Starting conversation with template "${templateName}"...`);
       await activeConversation.start();
-      
       // Conversation ended naturally
       isConversationRunning = false;
       startButton.textContent = 'Start Conversation';
       startButton.classList.remove('stop');
+      pauseButton.style.display = 'none';
+      exportButton.style.display = 'block';
       exportButton.style.display = 'block';
     } catch (error) {
       console.error('Error starting conversation:', error);
@@ -1291,6 +1336,8 @@ document.addEventListener('DOMContentLoaded', () => {
       isConversationRunning = false;
       startButton.textContent = 'Start Conversation';
       startButton.classList.remove('stop');
+      pauseButton.style.display = 'none';
+      resumeButton.style.display = 'none';
       exportButton.style.display = 'block';
     }
   }
