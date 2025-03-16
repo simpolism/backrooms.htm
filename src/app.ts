@@ -4,6 +4,11 @@ import { Conversation } from './conversation';
 import { loadTemplate, getAvailableTemplates, saveCustomTemplate, getCustomTemplate, clearCustomTemplate } from './templates';
 import { generateDistinctColors, getRgbColor, saveToLocalStorage, loadFromLocalStorage } from './utils';
 import { ApiKeys, CustomTemplate, ModelInfo } from './types';
+import {
+  initiateOAuthFlow,
+  handleOAuthCallback,
+  getAuthorizationCode
+} from './oauth';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize UI elements
@@ -73,10 +78,79 @@ document.addEventListener('DOMContentLoaded', () => {
   // API key input elements
   const hyperbolicKeyInput = document.getElementById('hyperbolic-key') as HTMLInputElement;
   const openrouterKeyInput = document.getElementById('openrouter-key') as HTMLInputElement;
+  const openrouterOAuthButton = document.getElementById('openrouter-oauth-button') as HTMLButtonElement;
+  
+  // Create a container for OpenRouter auth messages
+  const openrouterAuthContainer = document.createElement('div');
+  openrouterAuthContainer.className = 'auth-message-container';
+  openrouterAuthContainer.style.display = 'none';
+  openrouterAuthContainer.style.marginTop = '15px';
+  openrouterAuthContainer.style.marginBottom = '10px';
+  openrouterAuthContainer.style.padding = '8px 10px';
+  openrouterAuthContainer.style.border = '1px solid #000000';
+  openrouterAuthContainer.style.fontSize = '14px';
+  openrouterAuthContainer.style.fontFamily = 'Times New Roman, serif';
+  openrouterAuthContainer.style.textAlign = 'center';
+  openrouterAuthContainer.style.transition = 'opacity 0.3s ease';
+  openrouterAuthContainer.style.width = '100%';
+  openrouterAuthContainer.style.boxSizing = 'border-box';
+  
+  // Find the parent container of the OAuth button's parent
+  // This places the message in a more appropriate location in the hierarchy
+  const openrouterOAuthParent = openrouterOAuthButton.closest('.input-group');
+  if (openrouterOAuthParent && openrouterOAuthParent.parentElement) {
+    // Insert after the input group containing the OAuth button
+    openrouterOAuthParent.parentElement.insertBefore(
+      openrouterAuthContainer,
+      openrouterOAuthParent.nextSibling
+    );
+  }
 
   // Load saved API keys if available
   hyperbolicKeyInput.value = loadFromLocalStorage('hyperbolicApiKey', '');
   openrouterKeyInput.value = loadFromLocalStorage('openrouterApiKey', '');
+  
+  // Function to show temporary auth messages
+  function showAuthMessage(message: string, isError: boolean = false, duration: number = 5000) {
+    // Set message and styling
+    openrouterAuthContainer.textContent = message;
+    
+    // Apply styling based on message type
+    if (isError) {
+      openrouterAuthContainer.style.backgroundColor = '#EEEEEE';
+      openrouterAuthContainer.style.color = '#FF0000';
+    } else {
+      openrouterAuthContainer.style.backgroundColor = '#EEEEEE';
+      openrouterAuthContainer.style.color = '#000000';
+    }
+    
+    // Show the message with a fade-in effect
+    openrouterAuthContainer.style.opacity = '0';
+    openrouterAuthContainer.style.display = 'block';
+    
+    // Trigger reflow to ensure transition works
+    void openrouterAuthContainer.offsetWidth;
+    openrouterAuthContainer.style.opacity = '1';
+    
+    // Clear any existing timeout
+    const existingTimeout = openrouterAuthContainer.dataset.timeoutId;
+    if (existingTimeout) {
+      window.clearTimeout(parseInt(existingTimeout));
+    }
+    
+    // Set timeout to hide the message with fade-out effect
+    const timeoutId = window.setTimeout(() => {
+      openrouterAuthContainer.style.opacity = '0';
+      
+      // After fade-out completes, hide the element
+      setTimeout(() => {
+        openrouterAuthContainer.style.display = 'none';
+      }, 300); // Match the transition duration
+    }, duration);
+    
+    // Store timeout ID in dataset
+    openrouterAuthContainer.dataset.timeoutId = timeoutId.toString();
+  }
   
   // Load saved max output length if available
   maxOutputLengthInput.value = loadFromLocalStorage('maxOutputLength', '1024');
@@ -114,6 +188,75 @@ document.addEventListener('DOMContentLoaded', () => {
     saveToLocalStorage('openrouterApiKey', openrouterKeyInput.value);
     refreshModelSelects();
   });
+  
+  // Handle OpenRouter OAuth button click
+  openrouterOAuthButton.addEventListener('click', async () => {
+    try {
+      // Show loading message
+      showAuthMessage('Initiating authentication with OpenRouter...', false);
+      
+      // Start the OAuth flow
+      await initiateOAuthFlow();
+      // The page will be redirected to OpenRouter, so no need to do anything else here
+    } catch (error) {
+      console.error('Error initiating OAuth flow:', error);
+      showAuthMessage(`Error initiating OAuth flow: ${error instanceof Error ? error.message : String(error)}`, true);
+    }
+  });
+  
+  // Check if this is a callback from OpenRouter OAuth
+  if (window.location.search.includes('code=') || window.location.search.includes('error=')) {
+    // Show initial processing message
+    showAuthMessage('Processing authentication response...', false, 60000);
+    
+    // Check for error parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+    
+    if (errorParam) {
+      // Handle explicit error from OAuth provider
+      console.error('OAuth error:', errorParam, errorDescription);
+      showAuthMessage(
+        `Authentication denied: ${errorDescription || errorParam}`,
+        true,
+        10000
+      );
+      
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    else if (getAuthorizationCode()) {
+      // Handle the OAuth callback for successful code
+      handleOAuthCallback(
+        // Success callback
+        (apiKey) => {
+          // Save the API key to localStorage
+          saveToLocalStorage('openrouterApiKey', apiKey);
+          
+          // Update the input field
+          openrouterKeyInput.value = apiKey;
+          
+          // Refresh model selects
+          refreshModelSelects();
+          
+          // Show success message
+          showAuthMessage('Successfully authenticated with OpenRouter!', false, 8000);
+          
+          // Clean up the URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        },
+        // Error callback
+        (error) => {
+          console.error('Error handling OAuth callback:', error);
+          showAuthMessage(`Error authenticating with OpenRouter: ${error.message}`, true, 10000);
+          
+          // Clean up the URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      );
+    }
+  }
   
   // Font size control event handlers
   decreaseFontSizeBtn.addEventListener('click', () => {
@@ -284,7 +427,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       // Display error message
-      addOutputMessage('System', `Error: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = `Error: ${error instanceof Error ? error.message : String(error)}`;
+      
+      // If this is an OpenRouter-related error, show it in the auth message container
+      if (errorMessage.toLowerCase().includes('openrouter')) {
+        showAuthMessage(errorMessage, true);
+      } else {
+        // For other errors, use the conversation output
+        addOutputMessage('System', errorMessage);
+      }
     }
   }
   
