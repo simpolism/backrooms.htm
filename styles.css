@@ -527,21 +527,23 @@ input:checked + .toggle-slider:before {
   font-style: italic;
 }
 
-.explore-mode-inputs {
-  margin-top: 10px;
-}
-
 .explore-mode-input-group {
   display: grid;
   grid-template-columns: 200px auto auto;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  margin-top: 5px;
+  margin-left: 20px;
   gap: 10px;
+  border-top: 1px dotted #CCCCCC;
+  padding-top: 5px;
 }
 
 .explore-mode-input-group label {
   margin-bottom: 0;
   font-weight: normal;
+  font-size: 13px;
+  color: #555555;
 }
 
 .explore-mode-input-group .toggle-switch {
@@ -562,6 +564,7 @@ input:checked + .toggle-slider:before {
   border: 1px solid #000000;
   background-color: #EEEEEE;
   margin-bottom: 20px;
+  margin-top: 15px; /* Add space above the explore mode container */
   overflow: hidden;
 }
 
@@ -578,7 +581,7 @@ input:checked + .toggle-slider:before {
 }
 
 .explore-mode-outputs {
-  max-height: 400px;
+  height: 400px; /* Fixed height instead of just max-height */
   overflow-y: auto;
 }
 
@@ -637,11 +640,12 @@ input:checked + .toggle-slider:before {
   }
   
   .explore-mode-container {
-    max-height: 300px;
+    /* No need for max-height here as the container's height is determined by its content */
+    margin-top: 10px; /* Slightly less margin on mobile */
   }
   
   .explore-mode-outputs {
-    max-height: 250px;
+    height: 250px; /* Fixed height for mobile */
   }
   .template-editor-controls {
     flex-direction: column;
