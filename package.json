@@ -1,5 +1,5 @@
 {
-  "name": "backrooms.directory",
+  "name": "backrooms-directory-react",
   "version": "1.0.0",
   "description": "In which the AIs explore the backrooms together.",
   "main": "dist/bundle.js",
@@ -9,9 +9,13 @@
     "start": "webpack serve --mode development --open"
   },
   "dependencies": {
-    "core-js": "^3.36.0"
+    "core-js": "^3.36.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
     "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.3",

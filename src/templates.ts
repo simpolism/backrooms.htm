@@ -1,4 +1,4 @@
-import { TemplateConfig, Message, CustomTemplate } from './types';
+import { TemplateConfig, Message, CustomTemplate, TemplateInfo } from './types';
 import { MODEL_INFO } from './models';
 
 // Custom template storage functions
@@ -109,11 +109,6 @@ export async function loadTemplate(
   }
 }
 
-export interface TemplateInfo {
-  name: string;
-  description: string;
-}
-
 export async function getAvailableTemplates(): Promise<TemplateInfo[]> {
   try {
     // In a browser environment, we'd typically have a predefined list or fetch from an API
@@ -143,5 +138,35 @@ export async function getAvailableTemplates(): Promise<TemplateInfo[]> {
     console.error('Error fetching templates:', error);
     // Return a default template if fetch fails
     return [{ name: 'example', description: 'Default example template' }];
+  }
+}
+
+export async function getTemplateModelCount(templateName: string): Promise<number> {
+  try {
+    let text: string;
+    
+    // Check if this is the custom template
+    if (templateName === 'custom') {
+      const customTemplate = getCustomTemplate();
+      
+      if (!customTemplate) {
+        throw new Error('Custom template not found.');
+      }
+      
+      text = customTemplate.content;
+    } else {
+      // Load built-in template
+      const response = await fetch(`./public/templates/${templateName}.jsonl`);
+      if (!response.ok) {
+        throw new Error(`Template '${templateName}' not found.`);
+      }
+      text = await response.text();
+    }
+    
+    const lines = text.trim().split('\n');
+    return lines.length;
+  } catch (error) {
+    console.error(`Error loading template: ${error}`);
+    throw error;
   }
 }

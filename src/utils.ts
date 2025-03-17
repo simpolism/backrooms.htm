@@ -51,20 +51,11 @@ export function formatLogFilename(models: string[], template: string): string {
   return `${models.join('_')}_${template}_${timestamp}.txt`;
 }
 
-export function saveToLocalStorage(key: string, value: any): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error(`Error saving to local storage: ${error}`);
-  }
+export function getCurrentTimestamp(): string {
+  const now = new Date();
+  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-export function loadFromLocalStorage(key: string, defaultValue: any = null): any {
-  try {
-    const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : defaultValue;
-  } catch (error) {
-    console.error(`Error loading from local storage: ${error}`);
-    return defaultValue;
-  }
+export function generateUniqueId(): string {
+  return `id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }

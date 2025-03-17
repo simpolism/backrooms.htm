@@ -1,68 +1,6 @@
 import { Message, ApiKeys, ModelInfo, StreamingCallback } from './types';
 import { MODEL_INFO } from './models';
-import {
-  hyperbolicCompletionConversation,
-  openrouterConversation,
-} from './api';
-import { loadFromLocalStorage } from './utils';
-
-export function generateModelResponse(
-  modelInfo: ModelInfo,
-  actor: string,
-  context: Message[],
-  systemPrompt: string | null,
-  apiKeys: ApiKeys,
-  maxOutputLength: number = 1024,
-  modelIndex?: number,
-  onChunk?: StreamingCallback,
-  abortSignal?: AbortSignal
-): Promise<string> {
-  // Determine which API to use based on the company
-  const company = modelInfo.company;
-  
-  if (company === 'hyperbolic_completion') {
-    return hyperbolicCompletionConversation(
-      actor,
-      modelInfo.api_name,
-      context,
-      systemPrompt,
-      apiKeys.hyperbolicApiKey,
-      maxOutputLength,
-      onChunk,
-      abortSignal
-    );
-  } else if (company === 'openrouter') {
-    // If this is the custom OpenRouter model, use the saved API name
-    let apiName = modelInfo.api_name;
-    
-    if (modelInfo.is_custom_selector && modelIndex !== undefined) {
-      const savedModel = loadFromLocalStorage(`openrouter_custom_model_${modelIndex}`, null);
-      if (savedModel) {
-        try {
-          const savedModelData = JSON.parse(savedModel);
-          if (savedModelData.id) {
-            apiName = savedModelData.id;
-          }
-        } catch (e) {
-          console.error('Error parsing saved model:', e);
-        }
-      }
-    }
-    
-    return openrouterConversation(
-      actor,
-      apiName,
-      context,
-      systemPrompt,
-      apiKeys.openrouterApiKey,
-      maxOutputLength,
-      onChunk,
-      abortSignal
-    );
-  } else {
-    throw new Error(`Unsupported model company: ${company}`);
-  }
-}
+import { generateModelResponse } from './api';
 
 export class Conversation {
   private models: string[];
@@ -72,12 +10,12 @@ export class Conversation {
   private apiKeys: ApiKeys;
   private outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void;
   private isRunning: boolean = false;
-  private isPaused: boolean = false; // New state for pause functionality
+  private isPaused: boolean = false;
   private maxTurns: number;
   private maxOutputLength: number;
   private currentTurn: number = 0;
-  private currentResponses: Map<string, string> = new Map(); // Track responses for each model
-  private abortController: AbortController | null = null; // For cancelling API requests
+  private currentResponses: Map<string, string> = new Map();
+  private abortController: AbortController | null = null;
 
   constructor(
     models: string[],

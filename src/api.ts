@@ -1,4 +1,15 @@
-import { Message, StreamingCallback } from './types';
+import { Message, StreamingCallback, ModelInfo, ApiKeys } from './types';
+
+// Helper function to load from localStorage
+function loadFromLocalStorage(key: string, defaultValue: any = null): any {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : defaultValue;
+  } catch (error) {
+    console.error(`Error loading from local storage: ${error}`);
+    return defaultValue;
+  }
+}
 
 // Helper function to process streaming responses
 async function processStream(
@@ -205,5 +216,63 @@ export async function hyperbolicCompletionConversation(
       console.error('Error calling Hyperbolic Completion API:', error);
       throw error;
     }
+  }
+}
+
+export function generateModelResponse(
+  modelInfo: ModelInfo,
+  actor: string,
+  context: Message[],
+  systemPrompt: string | null,
+  apiKeys: ApiKeys,
+  maxOutputLength: number = 1024,
+  modelIndex?: number,
+  onChunk?: StreamingCallback,
+  abortSignal?: AbortSignal
+): Promise<string> {
+  // Determine which API to use based on the company
+  const company = modelInfo.company;
+  
+  if (company === 'hyperbolic_completion') {
+    return hyperbolicCompletionConversation(
+      actor,
+      modelInfo.api_name,
+      context,
+      systemPrompt,
+      apiKeys.hyperbolicApiKey,
+      maxOutputLength,
+      onChunk,
+      abortSignal
+    );
+  } else if (company === 'openrouter') {
+    // If this is the custom OpenRouter model, use the saved API name
+    let apiName = modelInfo.api_name;
+    
+    if (modelInfo.is_custom_selector && modelIndex !== undefined) {
+      const savedModel = loadFromLocalStorage(`openrouter_custom_model_${modelIndex}`, null);
+      if (savedModel) {
+        try {
+          const savedModelData = JSON.parse(savedModel);
+          if (savedModelData.id) {
+            apiName = savedModelData.id;
+          }
+        } catch (e) {
+          console.error('Error parsing saved model:', e);
+        }
+      }
+    }
+    
+    return openrouterConversation(
+      actor,
+      apiName,
+      context,
+      systemPrompt,
+      apiKeys.openrouterApiKey,
+      maxOutputLength,
+      onChunk,
+      abortSignal
+    );
+  } else {
+    throw new Error(`Unsupported model company: ${company}`);
   }
 }
