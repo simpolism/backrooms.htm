@@ -185,16 +185,11 @@ export class Conversation {
    * @param responseId The ID of the selected response
    */
   public handleSelection(responseId: string): void {
-    console.log("handleSelection called with responseId:", responseId);
-    
     // Check if the response exists
     if (!this.parallelResponses.has(responseId)) {
       console.error(`Response with ID ${responseId} not found`);
-      console.log("Available responses:", Array.from(this.parallelResponses.keys()));
       return;
     }
-    
-    console.log("Response found, marking as selected");
     
     // Mark this response as selected
     this.selectedResponseId = responseId;
@@ -209,7 +204,6 @@ export class Conversation {
       
       // Cancel all other requests
       if (!isSelected && this.exploreAbortControllers.has(id)) {
-        console.log(`Cancelling request for non-selected response: ${id}`);
         this.exploreAbortControllers.get(id)?.abort();
         this.exploreAbortControllers.delete(id);
       }
@@ -217,10 +211,7 @@ export class Conversation {
     
     // Notify the selection callback if provided
     if (this.selectionCallback) {
-      console.log("Notifying selection callback");
       this.selectionCallback(responseId);
-    } else {
-      console.log("No selection callback provided");
     }
   }
   
@@ -230,26 +221,19 @@ export class Conversation {
    * @returns A streaming callback function
    */
   private createExploreStreamingCallback(responseId: string): StreamingCallback {
-    console.log("Creating explore streaming callback for response ID:", responseId);
-    
     return (chunk: string, isDone: boolean) => {
-      console.log(`Streaming callback called for ${responseId}:`, { chunk: chunk.substring(0, 20) + (chunk.length > 20 ? '...' : ''), isDone });
-      
       if (!this.isRunning) {
-        console.log("Conversation not running, ignoring chunk");
         return;
       }
       
       // Get current response
       const response = this.parallelResponses.get(responseId);
       if (!response) {
-        console.log("Response not found in parallelResponses map");
         return;
       }
       
       // Update content
       const updatedContent = response.content + chunk;
-      console.log(`Updating content for ${responseId}, new length: ${updatedContent.length}`);
       
       // Update response in map
       this.parallelResponses.set(responseId, {
@@ -257,9 +241,6 @@ export class Conversation {
         content: updatedContent,
         isComplete: isDone
       });
-      
-      // Always notify the outputCallback to ensure the explore mode outputs are displayed
-      console.log("Notifying outputCallback for explore mode response:", responseId);
       
       // Extract model index and option number from responseId
       // Format is "explore-timestamp-modelIndex-optionNumber"
@@ -289,10 +270,7 @@ export class Conversation {
       
       // If this is the selected response and we have a selection callback, notify it
       if (response.isSelected && this.selectionCallback) {
-        console.log("Notifying selection callback for selected response:", responseId);
         this.selectionCallback(responseId);
-      } else {
-        console.log("Not notifying selection callback:", { isSelected: response.isSelected, hasCallback: !!this.selectionCallback });
       }
     };
   }
@@ -303,22 +281,16 @@ export class Conversation {
    * @returns The selected response content
    */
   private async makeParallelRequests(modelIndex: number): Promise<string> {
-    console.log(`Making parallel requests for model index ${modelIndex}`);
-    
     const modelKey = this.models[modelIndex];
     const modelInfo = MODEL_INFO[modelKey];
     const modelName = this.modelDisplayNames[modelIndex];
     const exploreSetting = this.exploreModeSettings[modelIndex];
     
-    console.log("Explore setting:", exploreSetting);
-    
     if (!exploreSetting || !exploreSetting.enabled) {
-      console.error(`Explore mode is not enabled for model ${modelName}`);
       throw new Error(`Explore mode is not enabled for model ${modelName}`);
     }
     
     const numRequests = exploreSetting.numRequests;
-    console.log(`Making ${numRequests} parallel requests`);
     
     // Clear the explore mode outputs container by sending a special message
     // This ensures the UI is cleared before new parallel requests start
@@ -342,12 +314,10 @@ export class Conversation {
     
     // Create promises for parallel requests
     const requestPromises: Promise<void>[] = [];
-    console.log("Parallel responses map cleared, creating new requests");
     
     // Create parallel responses
     for (let i = 0; i < numRequests; i++) {
       const responseId = `explore-${Date.now()}-${modelIndex}-${i}`;
-      console.log(`Creating parallel response with ID: ${responseId}`);
       
       // Initialize response
       this.parallelResponses.set(responseId, {
@@ -356,7 +326,6 @@ export class Conversation {
         isSelected: false,
         isComplete: false
       });
-      console.log(`Initialized response in parallelResponses map: ${responseId}`);
       
       // Create abort controller for this request
       const abortController = new AbortController();
@@ -364,7 +333,6 @@ export class Conversation {
       
       // Create streaming callback
       const streamingCallback = this.createExploreStreamingCallback(responseId);
-      console.log(`Created streaming callback for response: ${responseId}`);
       
       // Make the request
       const requestPromise = generateModelResponse(
@@ -395,7 +363,7 @@ export class Conversation {
         }
       }).catch(error => {
         console.error(`Error in parallel request ${i} for ${modelName}:`, error);
-        
+
         // If this was a cancelled request, just log it
         if (error instanceof Error && error.message === 'Request cancelled') {
           console.log(`Request ${i} for ${modelName} was cancelled`);
@@ -421,31 +389,22 @@ export class Conversation {
     }
     
     // Wait for user to select a response
-    console.log("Waiting for user to select a response");
     return new Promise<string>((resolve, reject) => {
       // Create a function to check if a response has been selected
       const checkSelection = () => {
-        console.log("Checking if a response has been selected");
-        console.log("Current selectedResponseId:", this.selectedResponseId);
-        console.log("Current parallelResponses:", Array.from(this.parallelResponses.keys()));
-        
         if (this.selectedResponseId) {
-          console.log("Response selected:", this.selectedResponseId);
           const selectedResponse = this.parallelResponses.get(this.selectedResponseId);
           if (selectedResponse) {
-            console.log("Selected response found, resolving promise");
             resolve(selectedResponse.content);
           } else {
             console.error("Selected response not found in parallelResponses map");
             reject(new Error('Selected response not found'));
           }
         } else if (!this.isRunning) {
-          console.log("Conversation stopped, rejecting promise");
           reject(new Error('Conversation stopped'));
         } else {
-          console.log("No response selected yet, checking again in 100ms");
-          // Check again in 100ms
-          setTimeout(checkSelection, 100);
+          // Check again in 200ms
+          setTimeout(checkSelection, 200);
         }
       };
       
@@ -479,16 +438,10 @@ export class Conversation {
         let response: string;
         
         if (isExploreEnabled) {
-          console.log(`Explore mode enabled for model ${this.modelDisplayNames[i]}, making parallel requests`);
-          
           // Use explore mode with parallel requests
           response = await this.makeParallelRequests(i);
           
-          console.log(`Got selected response from makeParallelRequests for ${this.modelDisplayNames[i]}:`,
-            response.substring(0, 50) + (response.length > 50 ? '...' : ''));
-          
           // Add the selected response to the conversation output
-          console.log(`Adding selected response to conversation output for ${this.modelDisplayNames[i]}`);
           this.outputCallback(
             this.modelDisplayNames[i],
             response,
@@ -560,12 +513,9 @@ export class Conversation {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       } catch (error) {
-        console.error(`Error in turn processing for ${this.modelDisplayNames[i]}:`, error);
-        
         // Check if this was a cancelled request
         if (error instanceof Error && error.message === 'Request cancelled') {
-          // For cancelled requests, just log it
-          console.log(`Request for ${this.modelDisplayNames[i]} was cancelled`);
+          // For cancelled requests, just ignore it
         } else {
           // For other errors, show the error message and stop the conversation
           this.outputCallback(

@@ -46,9 +46,8 @@ async function processStream(
             if (content) {
               fullText += content;
               onChunk(content, false);
-            } else {
-              console.warn('No content extracted from response:', JSON.stringify(data));
             }
+            // ignore chunks without content
           } catch (e) {
             console.error('Error parsing SSE data:', e);
           }

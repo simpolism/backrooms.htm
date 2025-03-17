@@ -628,18 +628,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Update explore mode container visibility based on settings
   function updateExploreModeContainerVisibility() {
     const settings = loadExploreModeSettings();
-    console.log("Explore mode settings:", settings);
-    
     const isAnyEnabled = Object.values(settings).some(setting => setting.enabled);
-    console.log("Is any model's explore mode enabled:", isAnyEnabled);
     
     // Only show the container if at least one model has explore mode enabled
     exploreModeContainer.style.display = isAnyEnabled ? 'block' : 'none';
-    console.log("Explore mode container display:", exploreModeContainer.style.display);
     
     // Make sure the explore mode outputs container is empty when showing
     if (isAnyEnabled) {
-      console.log("Clearing explore mode outputs container");
       exploreModeOutputs.innerHTML = '';
     }
   }
@@ -653,14 +648,10 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Create explore mode output element
   function createExploreOutput(responseId: string, actor: string, content: string, isSelected: boolean = false) {
-    console.log("Creating explore output:", { responseId, actor, content, isSelected });
-    
     // Check if output already exists
     let outputElement = document.getElementById(responseId);
-    console.log("Existing output element:", outputElement);
     
     if (!outputElement) {
-      console.log("Creating new output element");
       // Create new output element
       outputElement = document.createElement('div');
       outputElement.id = responseId;
@@ -699,9 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
       outputElement.appendChild(contentDiv);
       
       // Add output to container
-      console.log("Adding output element to container:", exploreModeOutputs);
       exploreModeOutputs.appendChild(outputElement);
-      console.log("Output element added to container");
       
       // Auto-scroll to the new output if auto-scroll is enabled
       if (autoScrollToggle.checked) {
@@ -742,31 +731,17 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Selection callback for explore mode
   const exploreSelectionCallback: SelectionCallback = (responseId: string) => {
-    console.log("exploreSelectionCallback called with responseId:", responseId);
-    
     // Get all explore outputs
     const outputs = exploreModeOutputs.querySelectorAll('.explore-output');
-    console.log("Found explore outputs:", outputs.length);
     
     // Update selected state
     outputs.forEach(output => {
       if (output.id === responseId) {
-        console.log(`Marking output ${output.id} as selected`);
         output.classList.add('selected');
       } else {
-        console.log(`Removing selected class from output ${output.id}`);
         output.classList.remove('selected');
       }
     });
-    
-    // Get the selected response
-    const selectedOutput = document.getElementById(responseId);
-    if (selectedOutput) {
-      console.log("Found selected output");
-      // No auto-scrolling to the selected output
-    } else {
-      console.error("Selected output element not found in DOM:", responseId);
-    }
   };
   
   // Create OpenRouter autocomplete field
@@ -1676,7 +1651,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function addOutputMessage(actor: string, content: string, elementId?: string, isLoading: boolean = false) {
     // Check if this is a special message to clear explore outputs
     if (content === 'clear-explore-outputs' && elementId && elementId.startsWith('clear-explore-outputs-')) {
-      console.log("Clearing explore mode outputs container");
       exploreModeOutputs.innerHTML = '';
       return;
     }
@@ -1685,7 +1659,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elementId && elementId.startsWith('explore-')) {
       // Create or update explore output
       // The selection state will be managed by the exploreSelectionCallback
-      console.log("Explore mode message received:", { actor, content, elementId });
       createExploreOutput(elementId, actor, content);
       return;
     }
@@ -1863,18 +1836,15 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Check if any model has explore mode enabled
       const isExploreEnabled = Object.values(exploreModeSettings).some(setting => setting.enabled);
-      console.log("Is explore mode enabled for any model:", isExploreEnabled);
       
       // Only show pause button if no model has explore mode enabled
       pauseButton.style.display = isExploreEnabled ? 'none' : 'inline-block';
       
       // Make sure the explore mode container is visible if needed
       exploreModeContainer.style.display = isExploreEnabled ? 'block' : 'none';
-      console.log("Explore mode container display at start:", exploreModeContainer.style.display);
       
       // Clear explore mode outputs
       exploreModeOutputs.innerHTML = '';
-      console.log("Cleared explore mode outputs container");
       
       // Start conversation
       activeConversation = new Conversation(
