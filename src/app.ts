@@ -186,8 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
     allModelSelects.forEach((select, index) => {
       const selectedValue = select.value;
-      populateModelSelect(select, index);
-      select.value = selectedValue;
+      populateModelSelect(select, index, selectedValue);
     });
   }
 
@@ -415,6 +414,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const modelCount = await getTemplateModelCount(templateName);
       currentTemplateModelCount = modelCount;
       
+      // Save current model selections before clearing
+      const currentSelections: string[] = [];
+      const existingModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
+      existingModelSelects.forEach(select => {
+        currentSelections.push(select.value);
+      });
+      
       // Clear existing model inputs
       modelInputs.innerHTML = '';
       
@@ -435,8 +441,9 @@ document.addEventListener('DOMContentLoaded', () => {
         newGroup.appendChild(select);
         modelInputs.appendChild(newGroup);
         
-        // Populate the select
-        populateModelSelect(select, i);
+        // Populate the select with the current selection if available
+        const currentValue = i < currentSelections.length ? currentSelections[i] : null;
+        populateModelSelect(select, i, currentValue);
       }
     } catch (error) {
       // Display error message
@@ -589,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Populate a single model select
-  function populateModelSelect(select: HTMLSelectElement, index?: number) {
+  function populateModelSelect(select: HTMLSelectElement, index?: number, currentValue?: string | null) {
     select.innerHTML = '';
 
     // Get current API keys
@@ -639,8 +646,12 @@ document.addEventListener('DOMContentLoaded', () => {
       select.appendChild(option);
     });
     
-    // Set selected value if available and index is provided
-    if (index !== undefined && savedModelSelections && savedModelSelections[index]) {
+    // Set selected value based on priority:
+    // 1. Use currentValue if provided (from current selections)
+    // 2. Otherwise use saved model selections if available
+    if (currentValue) {
+      select.value = currentValue;
+    } else if (index !== undefined && savedModelSelections && savedModelSelections[index]) {
       select.value = savedModelSelections[index];
     }
     
