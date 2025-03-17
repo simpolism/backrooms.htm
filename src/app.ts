@@ -299,7 +299,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Update font size and save to localStorage
   function updateFontSize() {
     currentFontSizeSpan.textContent = `${currentFontSize}px`;
+    
+    // Apply font size to conversation output
     conversationOutput.style.fontSize = `${currentFontSize}px`;
+    
+    // Apply font size to explore mode outputs
+    const exploreOutputContents = document.querySelectorAll('.explore-output-content');
+    exploreOutputContents.forEach(content => {
+      (content as HTMLElement).style.fontSize = `${currentFontSize}px`;
+    });
+    
     saveToLocalStorage('outputFontSize', currentFontSize.toString());
   }
   
@@ -683,6 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
       contentDiv.className = 'explore-output-content';
       contentDiv.textContent = content;
       contentDiv.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
+      contentDiv.style.fontSize = `${currentFontSize}px`;
       
       // Add elements to output
       outputElement.appendChild(header);
@@ -711,6 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (contentDiv) {
         contentDiv.textContent = content;
         (contentDiv as HTMLElement).style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
+        (contentDiv as HTMLElement).style.fontSize = `${currentFontSize}px`;
       }
       
       // Update selected state
