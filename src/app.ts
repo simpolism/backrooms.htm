@@ -792,7 +792,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Create a label for the load button
     const loadButtonLabel = document.createElement('label');
-    loadButtonLabel.textContent = 'Load Conversation:';
+    loadButtonLabel.textContent = 'Load Previous Conversation:';
     
     // Add the elements to the DOM
     loadButtonGroup.appendChild(loadButtonLabel);

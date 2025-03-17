@@ -20,6 +20,15 @@ header {
   padding-bottom: 10px;
 }
 
+.site-tagline {
+  font-size: 14px;
+  font-style: italic;
+  color: #555555;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
 h1 {
   font-size: 24px;
   text-align: center;
@@ -70,6 +79,15 @@ button {
 
 button:active {
   border-style: inset;
+}
+
+/* Disabled elements styling */
+input:disabled,
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #EEEEEE;
+  color: #999999;
 }
 
 .button-container {
@@ -133,6 +151,13 @@ button:active {
 /* Output settings styles */
 .output-settings {
   margin-bottom: 15px;
+}
+
+.settings-divider {
+  border: 0;
+  height: 1px;
+  background-color: #CCCCCC;
+  margin: 10px 0;
 }
 
 .output-setting-group {
@@ -348,8 +373,10 @@ input:checked + .toggle-slider:before {
   font-weight: bold;
 }
 
-/* API Key Disclaimer Style */
-.api-key-disclaimer {
+/* Disclaimer Styles */
+.api-key-disclaimer,
+.template-disclaimer,
+.model-disclaimer {
   font-size: 12px;
   margin-top: 0;
   margin-bottom: 10px;
