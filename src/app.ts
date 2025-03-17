@@ -553,7 +553,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add click handler to the toggle switch container for better usability
         toggleContainer.addEventListener('click', (e) => {
           // Prevent double triggering when clicking directly on the checkbox
-          if (e.target !== toggleInput) {
+          // Also check if the input is disabled
+          if (e.target !== toggleInput && !toggleInput.disabled) {
             toggleInput.checked = !toggleInput.checked;
             
             // Manually trigger the change event
@@ -1539,11 +1540,29 @@ document.addEventListener('DOMContentLoaded', () => {
       resumeButton.style.display = 'none';
       exportButton.style.display = 'block';
       
-      // Re-enable max turns, max output length, seed fields and load conversation button
+      // Re-enable max turns, max output length, seed fields, load conversation button,
+      // and explore mode controls
       maxTurnsInput.disabled = false;
       maxOutputLengthInput.disabled = false;
       seedInput.disabled = false;
       loadButton.disabled = false;
+      
+      // Re-enable all explore mode toggles and number inputs
+      const exploreToggles = document.querySelectorAll('[id^="explore-mode-toggle-"]') as NodeListOf<HTMLInputElement>;
+      const exploreNumInputs = document.querySelectorAll('[id^="explore-mode-num-requests-"]') as NodeListOf<HTMLInputElement>;
+      
+      exploreToggles.forEach(toggle => {
+        toggle.disabled = false;
+        // Also remove disabled class from the parent toggle switch container
+        const toggleContainer = toggle.closest('.toggle-switch');
+        if (toggleContainer) {
+          toggleContainer.classList.remove('disabled');
+        }
+      });
+      
+      exploreNumInputs.forEach(input => {
+        input.disabled = false;
+      });
     }
   }
   
@@ -1561,11 +1580,29 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseButton.style.display = 'none';
     resumeButton.style.display = 'none';
     
-    // Ensure max turns, max output length, seed, and load conversation button are enabled
+    // Ensure max turns, max output length, seed, load conversation button,
+    // and explore mode controls are enabled
     maxTurnsInput.disabled = false;
     maxOutputLengthInput.disabled = false;
     seedInput.disabled = false;
     loadButton.disabled = false;
+    
+    // Re-enable all explore mode toggles and number inputs
+    const exploreToggles = document.querySelectorAll('[id^="explore-mode-toggle-"]') as NodeListOf<HTMLInputElement>;
+    const exploreNumInputs = document.querySelectorAll('[id^="explore-mode-num-requests-"]') as NodeListOf<HTMLInputElement>;
+    
+    exploreToggles.forEach(toggle => {
+      toggle.disabled = false;
+      // Also remove disabled class from the parent toggle switch container
+      const toggleContainer = toggle.closest('.toggle-switch');
+      if (toggleContainer) {
+        toggleContainer.classList.remove('disabled');
+      }
+    });
+    
+    exploreNumInputs.forEach(input => {
+      input.disabled = false;
+    });
     
     // Clear existing conversation
     conversationOutput.innerHTML = '';
@@ -1726,12 +1763,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure the value is within the valid range
     maxOutputLength = Math.max(1, Math.min(maxOutputLength, 1024));
     
-    // Disable max turns, max output length, seed fields and load conversation button
-    // when conversation is in the "started" state (even if paused)
+    // Disable max turns, max output length, seed fields, load conversation button,
+    // and explore mode controls when conversation is in the "started" state (even if paused)
     maxTurnsInput.disabled = true;
     maxOutputLengthInput.disabled = true;
     seedInput.disabled = true;
     loadButton.disabled = true;
+    
+    // Disable all explore mode toggles and number inputs
+    const exploreToggles = document.querySelectorAll('[id^="explore-mode-toggle-"]') as NodeListOf<HTMLInputElement>;
+    const exploreNumInputs = document.querySelectorAll('[id^="explore-mode-num-requests-"]') as NodeListOf<HTMLInputElement>;
+    
+    exploreToggles.forEach(toggle => {
+      toggle.disabled = true;
+      // Also add disabled class to the parent toggle switch container
+      const toggleContainer = toggle.closest('.toggle-switch');
+      if (toggleContainer) {
+        toggleContainer.classList.add('disabled');
+      }
+    });
+    
+    exploreNumInputs.forEach(input => {
+      input.disabled = true;
+    });
     
     // Get API keys
     const apiKeys: ApiKeys = {
@@ -1768,7 +1822,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update UI to show we're in conversation mode
       startButton.textContent = 'Stop Conversation';
       startButton.classList.add('stop');
-      pauseButton.style.display = 'inline-block';
       isConversationRunning = true;
       
       // Verify template exists and has the correct number of models
@@ -1800,6 +1853,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Check if any model has explore mode enabled
       const isExploreEnabled = Object.values(exploreModeSettings).some(setting => setting.enabled);
       console.log("Is explore mode enabled for any model:", isExploreEnabled);
+      
+      // Only show pause button if no model has explore mode enabled
+      pauseButton.style.display = isExploreEnabled ? 'none' : 'inline-block';
       
       // Make sure the explore mode container is visible if needed
       exploreModeContainer.style.display = isExploreEnabled ? 'block' : 'none';
@@ -1848,6 +1904,20 @@ document.addEventListener('DOMContentLoaded', () => {
       pauseButton.style.display = 'none';
       resumeButton.style.display = 'none';
       exportButton.style.display = 'block';
+      
+      // Re-enable all explore mode toggles and number inputs
+      exploreToggles.forEach(toggle => {
+        toggle.disabled = false;
+        // Also remove disabled class from the parent toggle switch container
+        const toggleContainer = toggle.closest('.toggle-switch');
+        if (toggleContainer) {
+          toggleContainer.classList.remove('disabled');
+        }
+      });
+      
+      exploreNumInputs.forEach(input => {
+        input.disabled = false;
+      });
       
       // Re-enable max turns, max output length, seed fields and load conversation button
       maxTurnsInput.disabled = false;
