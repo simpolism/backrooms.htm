@@ -117,6 +117,15 @@ button:disabled {
   font-size: 14px;
 }
 
+/* Style for the load conversation button in output settings */
+#load-conversation {
+  width: 200px;
+  padding: 5px;
+  text-align: center;
+  justify-self: start;
+  align-self: center;
+}
+
 .model-inputs {
   margin-bottom: 10px;
 }
@@ -157,40 +166,47 @@ button:disabled {
   border: 0;
   height: 1px;
   background-color: #CCCCCC;
-  margin: 10px 0;
+  margin: 15px 0;
 }
 
 .output-setting-group {
-  display: flex;
+  display: grid;
+  grid-template-columns: 200px 1fr 20px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .output-setting-group label {
   margin-bottom: 0;
   margin-right: 10px;
-  min-width: 80px;
+  min-width: 200px;
+  text-align: left;
 }
 
 .font-size-controls {
   display: flex;
   align-items: center;
+  width: 120px;
+  max-width: 100%;
+  justify-self: start;
 }
 
 /* Style for number inputs in output settings */
 .output-setting-input {
-  width: 120px;
+  width: 200px;
   padding: 3px;
   border: 1px solid #000000;
   font-size: 14px;
   background-color: #FFFFFF;
+  justify-self: start;
+  align-self: center;
 }
 
 .font-size-btn {
   width: 25px;
   height: 25px;
   padding: 0;
-  margin: 0 5px;
+  margin: 0 0px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,6 +215,7 @@ button:disabled {
 
 #current-font-size {
   min-width: 40px;
+  margin: 0 5px;
   text-align: center;
 }
 
@@ -208,6 +225,9 @@ button:disabled {
   display: inline-block;
   width: 40px;
   height: 20px;
+  margin-left: 0;
+  justify-self: start;
+  align-self: center;
 }
 
 .toggle-switch input {
@@ -554,6 +574,57 @@ input:checked + .toggle-slider:before {
   
   .model-input-group label {
     margin-bottom: 5px;
+  }
+  
+  /* Mobile adjustments for output settings */
+  .output-setting-group {
+    grid-template-columns: 200px 1fr 20px;
+  }
+  
+  .output-setting-input {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  #load-conversation {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  @media (max-width: 500px) {
+    .output-setting-group {
+      grid-template-columns: 150px 1fr 15px;
+    }
+    
+    .output-setting-group label {
+      min-width: 150px;
+    }
+  }
+  
+  @media (max-width: 400px) {
+    .output-setting-group {
+      grid-template-columns: 120px 1fr 10px;
+    }
+    
+    .output-setting-group label {
+      min-width: 120px;
+      font-size: 13px;
+    }
+    
+    .font-size-btn {
+      width: 22px;
+      height: 22px;
+      margin: 0 3px;
+    }
+    
+    #current-font-size {
+      min-width: 36px;
+      font-size: 13px;
+    }
+    
+    .settings-divider {
+      margin: 10px 0;
+    }
   }
 }
 

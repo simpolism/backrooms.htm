@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
   seedInput.value = loadFromLocalStorage('seed', '');
   
   // Load saved font size and word wrap settings
-  const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
+  const savedFontSize = loadFromLocalStorage('outputFontSize', '12');
   const savedWordWrap = loadFromLocalStorage('outputWordWrap', 'true');
   
   // Initialize font size and word wrap with saved values
