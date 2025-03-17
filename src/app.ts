@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const templateSelect = document.getElementById('template-select') as HTMLSelectElement;
   const maxTurnsInput = document.getElementById('max-turns') as HTMLInputElement;
   const maxOutputLengthInput = document.getElementById('max-output-length') as HTMLInputElement;
+  const seedInput = document.getElementById('seed') as HTMLInputElement;
   const startButton = document.getElementById('start-conversation') as HTMLButtonElement;
   const exportButton = document.getElementById('export-conversation') as HTMLButtonElement;
   const conversationOutput = document.getElementById('conversation-output') as HTMLDivElement;
@@ -167,6 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Load saved max output length if available
   maxOutputLengthInput.value = loadFromLocalStorage('maxOutputLength', '512');
+  
+  // Load saved seed if available
+  seedInput.value = loadFromLocalStorage('seed', '');
   
   // Load saved font size and word wrap settings
   const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
@@ -748,6 +752,11 @@ document.addEventListener('DOMContentLoaded', () => {
     saveToLocalStorage('maxOutputLength', value.toString());
   });
   
+  // Save seed when changed
+  seedInput.addEventListener('change', () => {
+    saveToLocalStorage('seed', seedInput.value);
+  });
+  
   // Save template selection when changed and update model inputs
   templateSelect.addEventListener('change', async () => {
     saveToLocalStorage('templateSelection', templateSelect.value);
@@ -1197,9 +1206,10 @@ document.addEventListener('DOMContentLoaded', () => {
       pauseButton.style.display = 'none';
       resumeButton.style.display = 'inline-block';
       
-      // Ensure max turns, max output length, and load conversation button remain disabled
+      // Ensure max turns, max output length, seed, and load conversation button remain disabled
       maxTurnsInput.disabled = true;
       maxOutputLengthInput.disabled = true;
+      seedInput.disabled = true;
       loadButton.disabled = true;
     }
   }
@@ -1213,9 +1223,10 @@ document.addEventListener('DOMContentLoaded', () => {
       pauseButton.style.display = 'inline-block';
       resumeButton.style.display = 'none';
       
-      // Ensure max turns, max output length, and load conversation button remain disabled
+      // Ensure max turns, max output length, seed, and load conversation button remain disabled
       maxTurnsInput.disabled = true;
       maxOutputLengthInput.disabled = true;
+      seedInput.disabled = true;
       loadButton.disabled = true;
     }
   }
@@ -1234,9 +1245,10 @@ document.addEventListener('DOMContentLoaded', () => {
       resumeButton.style.display = 'none';
       exportButton.style.display = 'block';
       
-      // Re-enable max turns and max output length fields and load conversation button
+      // Re-enable max turns, max output length, seed fields and load conversation button
       maxTurnsInput.disabled = false;
       maxOutputLengthInput.disabled = false;
+      seedInput.disabled = false;
       loadButton.disabled = false;
     }
   }
@@ -1255,9 +1267,10 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseButton.style.display = 'none';
     resumeButton.style.display = 'none';
     
-    // Ensure max turns, max output length, and load conversation button are enabled
+    // Ensure max turns, max output length, seed, and load conversation button are enabled
     maxTurnsInput.disabled = false;
     maxOutputLengthInput.disabled = false;
+    seedInput.disabled = false;
     loadButton.disabled = false;
     
     // Clear existing conversation
@@ -1393,10 +1406,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure the value is within the valid range
     maxOutputLength = Math.max(1, Math.min(maxOutputLength, 1024));
     
-    // Disable max turns and max output length fields and load conversation button
+    // Disable max turns, max output length, seed fields and load conversation button
     // when conversation is in the "started" state (even if paused)
     maxTurnsInput.disabled = true;
     maxOutputLengthInput.disabled = true;
+    seedInput.disabled = true;
     loadButton.disabled = true;
     
     // Get API keys
@@ -1454,6 +1468,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const systemPrompts = configs.map(config => config.system_prompt || null);
       const contexts = configs.map(config => config.context || []);
       
+      // Get seed value if provided
+      let seed: number | undefined = undefined;
+      if (seedInput.value.trim()) {
+        seed = parseInt(seedInput.value);
+      }
+      
       // Start conversation
       activeConversation = new Conversation(
         models,
@@ -1462,7 +1482,8 @@ document.addEventListener('DOMContentLoaded', () => {
         apiKeys,
         maxTurns,
         maxOutputLength,
-        addOutputMessage
+        addOutputMessage,
+        seed
       );
       
       addOutputMessage('System', `Starting conversation with template "${templateName}"...`);
@@ -1474,9 +1495,10 @@ document.addEventListener('DOMContentLoaded', () => {
       pauseButton.style.display = 'none';
       exportButton.style.display = 'block';
       
-      // Re-enable max turns and max output length fields and load conversation button
+      // Re-enable max turns, max output length, seed fields and load conversation button
       maxTurnsInput.disabled = false;
       maxOutputLengthInput.disabled = false;
+      seedInput.disabled = false;
       loadButton.disabled = false;
     } catch (error) {
       console.error('Error starting conversation:', error);
@@ -1490,9 +1512,10 @@ document.addEventListener('DOMContentLoaded', () => {
       resumeButton.style.display = 'none';
       exportButton.style.display = 'block';
       
-      // Re-enable max turns and max output length fields and load conversation button
+      // Re-enable max turns, max output length, seed fields and load conversation button
       maxTurnsInput.disabled = false;
       maxOutputLengthInput.disabled = false;
+      seedInput.disabled = false;
       loadButton.disabled = false;
     }
   }

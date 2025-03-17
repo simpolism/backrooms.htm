@@ -77,7 +77,8 @@ export async function openrouterConversation(
   openrouterKey: string,
   maxTokens: number = 1024,
   onChunk?: StreamingCallback,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  seed?: number
 ): Promise<string> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
   
@@ -93,6 +94,11 @@ export async function openrouterConversation(
     max_tokens: maxTokens,
     stream: true // Enable streaming
   };
+  
+  // Add seed if provided
+  if (seed !== undefined) {
+    requestBody.seed = seed;
+  }
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -140,7 +146,8 @@ export async function hyperbolicCompletionConversation(
   hyperbolicKey: string,
   maxTokens: number = 1024,
   onChunk?: StreamingCallback,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  seed?: number
 ): Promise<string> {
   // only use messages for system prompt, as llama base prefers a completion prompt
   const messages = [];
@@ -166,7 +173,7 @@ export async function hyperbolicCompletionConversation(
     'Content-Type': 'application/json'
   };
   
-  const payload = {
+  const payload: any = {
     model,
     messages,
     temperature: 1.0,
@@ -174,6 +181,11 @@ export async function hyperbolicCompletionConversation(
     prompt,
     stream: true // Enable streaming
   };
+  
+  // Add seed if provided
+  if (seed !== undefined) {
+    payload.seed = seed;
+  }
 
   try {
     const response = await fetch('https://api.hyperbolic.xyz/v1/completions', {

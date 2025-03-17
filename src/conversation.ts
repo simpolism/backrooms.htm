@@ -15,7 +15,8 @@ export function generateModelResponse(
   maxOutputLength: number = 1024,
   modelIndex?: number,
   onChunk?: StreamingCallback,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  seed?: number
 ): Promise<string> {
   // Determine which API to use based on the company
   const company = modelInfo.company;
@@ -29,7 +30,8 @@ export function generateModelResponse(
       apiKeys.hyperbolicApiKey,
       maxOutputLength,
       onChunk,
-      abortSignal
+      abortSignal,
+      seed
     );
   } else if (company === 'openrouter') {
     // If this is the custom OpenRouter model, use the saved API name
@@ -57,7 +59,8 @@ export function generateModelResponse(
       apiKeys.openrouterApiKey,
       maxOutputLength,
       onChunk,
-      abortSignal
+      abortSignal,
+      seed
     );
   } else {
     throw new Error(`Unsupported model company: ${company}`);
@@ -75,6 +78,7 @@ export class Conversation {
   private isPaused: boolean = false; // New state for pause functionality
   private maxTurns: number;
   private maxOutputLength: number;
+  private seed?: number; // Optional seed for deterministic responses
   private currentTurn: number = 0;
   private currentResponses: Map<string, string> = new Map(); // Track responses for each model
   private abortController: AbortController | null = null; // For cancelling API requests
@@ -86,7 +90,8 @@ export class Conversation {
     apiKeys: ApiKeys,
     maxTurns: number = Infinity,
     maxOutputLength: number = 1024,
-    outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void
+    outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void,
+    seed?: number
   ) {
     this.models = models;
     this.systemPrompts = systemPrompts;
@@ -95,6 +100,7 @@ export class Conversation {
     this.maxTurns = maxTurns;
     this.maxOutputLength = maxOutputLength;
     this.outputCallback = outputCallback;
+    this.seed = seed;
     
     // Generate model display names
     this.modelDisplayNames = models.map((model, index) => {
@@ -206,7 +212,8 @@ export class Conversation {
           this.maxOutputLength,
           i, // Pass the model index
           streamingCallback, // Pass the streaming callback
-          this.abortController.signal // Pass the abort signal
+          this.abortController.signal, // Pass the abort signal
+          this.seed // Pass the seed if provided
         );
         
         // Check for conversation end signal
