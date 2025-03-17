@@ -173,10 +173,10 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Load saved seed if available
   seedInput.value = loadFromLocalStorage('seed', '');
-  
-  // Load saved font size and word wrap settings
+  // Load saved font size, word wrap, and auto-scroll settings
   const savedFontSize = loadFromLocalStorage('outputFontSize', '12');
   const savedWordWrap = loadFromLocalStorage('outputWordWrap', 'true');
+  const savedAutoScroll = loadFromLocalStorage('outputAutoScroll', 'true');
   
   // Initialize font size and word wrap with saved values
   let currentFontSize = parseInt(savedFontSize);
@@ -185,6 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Initialize word wrap with saved value
   wordWrapToggle.checked = savedWordWrap === 'true';
+  conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
+  
+  // Initialize auto-scroll with saved value
+  const autoScrollToggle = document.getElementById('auto-scroll-toggle') as HTMLInputElement;
+  autoScrollToggle.checked = savedAutoScroll === 'true';
   conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
 
   // Function to refresh model selects when API keys change
@@ -317,8 +322,38 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Update word wrap and save to localStorage
   function updateWordWrap() {
+    // Apply word wrap to conversation output
     conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
+    
+    // Apply word wrap to explore mode outputs
+    const exploreOutputContents = document.querySelectorAll('.explore-output-content');
+    exploreOutputContents.forEach(content => {
+      (content as HTMLElement).style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
+    });
+    
     saveToLocalStorage('outputWordWrap', wordWrapToggle.checked.toString());
+  }
+  
+  // Auto-scroll toggle event handler
+  autoScrollToggle.addEventListener('change', () => {
+    updateAutoScroll();
+  });
+  
+  // Also add click handler to the auto-scroll toggle switch container for better usability
+  const autoScrollToggleSwitch = autoScrollToggle.closest('.toggle-switch') as HTMLElement;
+  if (autoScrollToggleSwitch) {
+    autoScrollToggleSwitch.addEventListener('click', (e) => {
+      // Prevent double triggering when clicking directly on the checkbox
+      if (e.target !== autoScrollToggle) {
+        autoScrollToggle.checked = !autoScrollToggle.checked;
+        updateAutoScroll();
+      }
+    });
+  }
+  
+  // Update auto-scroll and save to localStorage
+  function updateAutoScroll() {
+    saveToLocalStorage('outputAutoScroll', autoScrollToggle.checked.toString());
   }
   
   // Load saved model and template selections if available
@@ -646,6 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const contentDiv = document.createElement('div');
       contentDiv.className = 'explore-output-content';
       contentDiv.textContent = content;
+      contentDiv.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
       
       // Add elements to output
       outputElement.appendChild(header);
@@ -655,6 +691,11 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log("Adding output element to container:", exploreModeOutputs);
       exploreModeOutputs.appendChild(outputElement);
       console.log("Output element added to container");
+      
+      // Auto-scroll to the new output if auto-scroll is enabled
+      if (autoScrollToggle.checked) {
+        exploreModeOutputs.scrollTop = exploreModeOutputs.scrollHeight;
+      }
       
       // Add click handler to the whole output for selection
       outputElement.addEventListener('click', (e) => {
@@ -668,6 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const contentDiv = outputElement.querySelector('.explore-output-content');
       if (contentDiv) {
         contentDiv.textContent = content;
+        (contentDiv as HTMLElement).style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
       }
       
       // Update selected state
@@ -675,6 +717,11 @@ document.addEventListener('DOMContentLoaded', () => {
         outputElement.classList.add('selected');
       } else {
         outputElement.classList.remove('selected');
+      }
+      
+      // Auto-scroll when content is updated if auto-scroll is enabled
+      if (autoScrollToggle.checked) {
+        exploreModeOutputs.scrollTop = exploreModeOutputs.scrollHeight;
       }
     }
     
@@ -703,9 +750,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get the selected response
     const selectedOutput = document.getElementById(responseId);
     if (selectedOutput) {
-      console.log("Found selected output, scrolling to it");
-      // Scroll to the selected output
-      selectedOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      console.log("Found selected output");
+      // No auto-scrolling to the selected output
     } else {
       console.error("Selected output element not found in DOM:", responseId);
     }
@@ -1614,8 +1660,13 @@ document.addEventListener('DOMContentLoaded', () => {
           // Update content
           contentDiv.textContent = content;
           
-          // Scroll to bottom
-          conversationOutput.scrollTop = conversationOutput.scrollHeight;
+          // Scroll to bottom if auto-scroll is enabled
+          if (autoScrollToggle.checked) {
+            const conversationContainer = conversationOutput.closest('.conversation-container');
+            if (conversationContainer) {
+              conversationContainer.scrollTop = conversationContainer.scrollHeight;
+            }
+          }
           return;
         }
       }
@@ -1641,8 +1692,13 @@ document.addEventListener('DOMContentLoaded', () => {
     messageDiv.appendChild(contentDiv);
     conversationOutput.appendChild(messageDiv);
     
-    // Scroll to bottom
-    conversationOutput.scrollTop = conversationOutput.scrollHeight;
+    // Scroll to bottom if auto-scroll is enabled
+    if (autoScrollToggle.checked) {
+      const conversationContainer = conversationOutput.closest('.conversation-container');
+      if (conversationContainer) {
+        conversationContainer.scrollTop = conversationContainer.scrollHeight;
+      }
+    }
   }
   
   // Start conversation
