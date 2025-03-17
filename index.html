@@ -138,6 +138,20 @@
         </div>
       </div>
       
+      <!-- Explore Mode Section -->
+      <div class="explore-mode collapsible-section collapsed">
+        <div class="collapsible-header">
+          <h2>Explore Mode</h2>
+          <span class="collapse-indicator">▼</span>
+        </div>
+        <div class="collapsible-content">
+          <p class="explore-mode-disclaimer">Explore mode allows you to generate multiple responses from each model and select your preferred output to continue the conversation.</p>
+          <div id="explore-mode-inputs" class="explore-mode-inputs">
+            <!-- Explore mode settings will be dynamically populated here -->
+          </div>
+        </div>
+      </div>
+      
       <div class="output-settings collapsible-section">
         <div class="collapsible-header">
           <h2>Output Settings</h2>
@@ -178,6 +192,16 @@
       <div class="button-container">
         <button id="start-conversation" class="primary-button">Start Conversation</button>
         <button id="export-conversation" class="secondary-button" style="display: none;">Export Conversation</button>
+      </div>
+    </div>
+    
+    <!-- Explore Mode Output Container -->
+    <div id="explore-mode-container" class="explore-mode-container" style="display: none;">
+      <div class="explore-mode-header">
+        <h3>Select an output to continue</h3>
+      </div>
+      <div id="explore-mode-outputs" class="explore-mode-outputs">
+        <!-- Parallel outputs will be displayed here -->
       </div>
     </div>
     

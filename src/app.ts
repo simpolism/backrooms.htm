@@ -3,7 +3,7 @@ import { MODEL_INFO } from './models';
 import { Conversation } from './conversation';
 import { loadTemplate, getAvailableTemplates, saveCustomTemplate, getCustomTemplate, clearCustomTemplate } from './templates';
 import { generateDistinctColors, getRgbColor, saveToLocalStorage, loadFromLocalStorage } from './utils';
-import { ApiKeys, CustomTemplate, ModelInfo } from './types';
+import { ApiKeys, CustomTemplate, ModelInfo, ExploreModeSettings, ExploreModeSetting, ParallelResponse, SelectionCallback } from './types';
 import {
   initiateOAuthFlow,
   handleOAuthCallback,
@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportButton = document.getElementById('export-conversation') as HTMLButtonElement;
   const conversationOutput = document.getElementById('conversation-output') as HTMLDivElement;
   const modelInputs = document.getElementById('model-inputs') as HTMLDivElement;
+  const exploreModeInputs = document.getElementById('explore-mode-inputs') as HTMLDivElement;
+  const exploreModeContainer = document.getElementById('explore-mode-container') as HTMLDivElement;
+  const exploreModeOutputs = document.getElementById('explore-mode-outputs') as HTMLDivElement;
   
   // Create load conversation button and file input
   const loadButton = document.createElement('button');
@@ -449,6 +452,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentValue = i < currentSelections.length ? currentSelections[i] : null;
         populateModelSelect(select, i, currentValue);
       }
+      
+      // Update explore mode inputs after updating model inputs
+      updateExploreModeInputs();
     } catch (error) {
       // Display error message
       const errorMessage = `Error: ${error instanceof Error ? error.message : String(error)}`;
@@ -462,6 +468,224 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
+  
+  // Load saved explore mode settings
+  function loadExploreModeSettings(): ExploreModeSettings {
+    return loadFromLocalStorage('exploreModeSettings', {});
+  }
+  
+  // Save explore mode settings
+  function saveExploreModeSettings(settings: ExploreModeSettings) {
+    saveToLocalStorage('exploreModeSettings', settings);
+  }
+  
+  // Update explore mode inputs based on current model selections
+  function updateExploreModeInputs() {
+    // Clear existing explore mode inputs
+    exploreModeInputs.innerHTML = '';
+    
+    // Get current model selects
+    const modelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
+    
+    // Load saved explore mode settings
+    const exploreModeSettings = loadExploreModeSettings();
+    
+    // Create explore mode inputs for each model
+    modelSelects.forEach((select, index) => {
+      const modelKey = select.value;
+      const modelInfo = MODEL_INFO[modelKey];
+      const modelName = `${modelInfo.display_name} ${index + 1}`;
+      
+      // Create input group
+      const inputGroup = document.createElement('div');
+      inputGroup.className = 'explore-mode-input-group';
+      
+      // Create label with model name
+      const label = document.createElement('label');
+      label.textContent = `${modelName}:`;
+      
+      // Create toggle switch
+      const toggleContainer = document.createElement('div');
+      toggleContainer.className = 'toggle-switch';
+      
+      const toggleInput = document.createElement('input');
+      toggleInput.type = 'checkbox';
+      toggleInput.id = `explore-mode-toggle-${index}`;
+      
+      // Set toggle state from saved settings
+      const savedSetting = exploreModeSettings[index];
+      toggleInput.checked = savedSetting?.enabled || false;
+      
+      const toggleSlider = document.createElement('span');
+      toggleSlider.className = 'toggle-slider';
+      
+      toggleContainer.appendChild(toggleInput);
+      toggleContainer.appendChild(toggleSlider);
+      
+      // Create number input for n (number of requests)
+      const numRequestsInput = document.createElement('input');
+      numRequestsInput.type = 'number';
+      numRequestsInput.id = `explore-mode-num-requests-${index}`;
+      numRequestsInput.className = 'num-requests-input';
+      numRequestsInput.min = '1';
+      numRequestsInput.max = '8';
+      numRequestsInput.value = (savedSetting?.numRequests || 3).toString();
+      
+      // Show/hide number input based on toggle state
+      numRequestsInput.style.display = toggleInput.checked ? 'block' : 'none';
+      
+      // Add event listener for toggle
+      toggleInput.addEventListener('change', () => {
+        // Show/hide number input based on toggle state
+        numRequestsInput.style.display = toggleInput.checked ? 'block' : 'none';
+        
+        // Update settings
+        const settings = loadExploreModeSettings();
+        settings[index] = {
+          enabled: toggleInput.checked,
+          numRequests: parseInt(numRequestsInput.value)
+        };
+        saveExploreModeSettings(settings);
+        
+        // Update explore mode container visibility
+        updateExploreModeContainerVisibility();
+      });
+      
+      // Add event listener for number input
+      numRequestsInput.addEventListener('change', () => {
+        // Ensure value is within range
+        let value = parseInt(numRequestsInput.value);
+        value = Math.max(1, Math.min(value, 8));
+        numRequestsInput.value = value.toString();
+        
+        // Update settings
+        const settings = loadExploreModeSettings();
+        settings[index] = {
+          enabled: toggleInput.checked,
+          numRequests: value
+        };
+        saveExploreModeSettings(settings);
+      });
+      
+      // Add elements to input group
+      inputGroup.appendChild(label);
+      inputGroup.appendChild(toggleContainer);
+      inputGroup.appendChild(numRequestsInput);
+      
+      // Add input group to explore mode inputs
+      exploreModeInputs.appendChild(inputGroup);
+    });
+    
+    // Update explore mode container visibility
+    updateExploreModeContainerVisibility();
+  }
+  
+  // Update explore mode container visibility based on settings
+  function updateExploreModeContainerVisibility() {
+    const settings = loadExploreModeSettings();
+    const isAnyEnabled = Object.values(settings).some(setting => setting.enabled);
+    
+    // Only show the container if at least one model has explore mode enabled
+    exploreModeContainer.style.display = isAnyEnabled ? 'block' : 'none';
+  }
+  
+  // Handle selection of a response in explore mode
+  function handleExploreSelection(responseId: string) {
+    if (activeConversation) {
+      activeConversation.handleSelection(responseId);
+    }
+  }
+  
+  // Create explore mode output element
+  function createExploreOutput(responseId: string, actor: string, content: string, isSelected: boolean = false) {
+    // Check if output already exists
+    let outputElement = document.getElementById(responseId);
+    
+    if (!outputElement) {
+      // Create new output element
+      outputElement = document.createElement('div');
+      outputElement.id = responseId;
+      outputElement.className = 'explore-output';
+      if (isSelected) {
+        outputElement.classList.add('selected');
+      }
+      
+      // Create header
+      const header = document.createElement('div');
+      header.className = 'explore-output-header';
+      
+      // Add actor name
+      const actorSpan = document.createElement('span');
+      actorSpan.textContent = actor;
+      header.appendChild(actorSpan);
+      
+      // Add select button
+      const selectButton = document.createElement('button');
+      selectButton.className = 'explore-select-button';
+      selectButton.textContent = 'Select';
+      selectButton.addEventListener('click', () => {
+        handleExploreSelection(responseId);
+      });
+      header.appendChild(selectButton);
+      
+      // Create content
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'explore-output-content';
+      contentDiv.textContent = content;
+      
+      // Add elements to output
+      outputElement.appendChild(header);
+      outputElement.appendChild(contentDiv);
+      
+      // Add output to container
+      exploreModeOutputs.appendChild(outputElement);
+      
+      // Add click handler to the whole output for selection
+      outputElement.addEventListener('click', (e) => {
+        // Don't trigger if clicking on the button (it has its own handler)
+        if (e.target !== selectButton && !selectButton.contains(e.target as Node)) {
+          handleExploreSelection(responseId);
+        }
+      });
+    } else {
+      // Update existing output
+      const contentDiv = outputElement.querySelector('.explore-output-content');
+      if (contentDiv) {
+        contentDiv.textContent = content;
+      }
+      
+      // Update selected state
+      if (isSelected) {
+        outputElement.classList.add('selected');
+      } else {
+        outputElement.classList.remove('selected');
+      }
+    }
+    
+    return outputElement;
+  }
+  
+  // Selection callback for explore mode
+  const exploreSelectionCallback: SelectionCallback = (responseId: string) => {
+    // Get all explore outputs
+    const outputs = exploreModeOutputs.querySelectorAll('.explore-output');
+    
+    // Update selected state
+    outputs.forEach(output => {
+      if (output.id === responseId) {
+        output.classList.add('selected');
+      } else {
+        output.classList.remove('selected');
+      }
+    });
+    
+    // Get the selected response
+    const selectedOutput = document.getElementById(responseId);
+    if (selectedOutput) {
+      // Scroll to the selected output
+      selectedOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
   
   // Create OpenRouter autocomplete field
   async function createOpenRouterAutocomplete(select: HTMLSelectElement, index: number) {
@@ -1332,6 +1556,14 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Add message to conversation output
   function addOutputMessage(actor: string, content: string, elementId?: string, isLoading: boolean = false) {
+    // Check if this is an explore mode message
+    if (elementId && elementId.startsWith('explore-')) {
+      // Create or update explore output
+      // The selection state will be managed by the exploreSelectionCallback
+      createExploreOutput(elementId, actor, content);
+      return;
+    }
+    
     // Get or assign color for this actor
     if (!actorColors[actor]) {
       actorColors[actor] = getRgbColor(colorGenerator.next());
@@ -1474,6 +1706,12 @@ document.addEventListener('DOMContentLoaded', () => {
         seed = parseInt(seedInput.value);
       }
       
+      // Get explore mode settings
+      const exploreModeSettings = loadExploreModeSettings();
+      
+      // Clear explore mode outputs
+      exploreModeOutputs.innerHTML = '';
+      
       // Start conversation
       activeConversation = new Conversation(
         models,
@@ -1483,7 +1721,9 @@ document.addEventListener('DOMContentLoaded', () => {
         maxTurns,
         maxOutputLength,
         addOutputMessage,
-        seed
+        seed,
+        exploreModeSettings,
+        exploreSelectionCallback
       );
       
       addOutputMessage('System', `Starting conversation with template "${templateName}"...`);

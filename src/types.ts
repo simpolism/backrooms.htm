@@ -33,6 +33,29 @@ export interface ApiKeys {
 // Callback function type for streaming content updates
 export type StreamingCallback = (chunk: string, isDone: boolean) => void;
 
+// Explore mode settings for a model
+export interface ExploreModeSetting {
+  enabled: boolean;     // Whether explore mode is enabled for this model
+  numRequests: number;  // Number of parallel requests (n) for this model
+}
+
+// Map of model position to explore mode settings
+export type ExploreModeSettings = Record<number, ExploreModeSetting>;
+
+// Interface for tracking parallel responses in explore mode
+export interface ParallelResponse {
+  id: string;           // Unique ID for this response
+  content: string;      // Current accumulated content
+  isSelected: boolean;  // Whether this response has been selected by the user
+  isComplete: boolean;  // Whether this response is complete
+}
+
+// Selection callback for explore mode
+export type SelectionCallback = (responseId: string) => void;
+
+// Extended streaming callback that includes response ID
+export type ExploreStreamingCallback = (responseId: string, chunk: string, isDone: boolean) => void;
+
 export interface CustomTemplate {
   name: string;        // Display name for the template
   description: string; // Brief description of what the template does
