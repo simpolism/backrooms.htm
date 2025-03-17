@@ -115,6 +115,75 @@ button:active {
   min-width: 80px;
 }
 
+/* Explore mode container styles */
+.explore-container {
+  border: 1px solid #000000;
+  background-color: #f5f5f5;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.explore-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.explore-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.explore-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.explore-option {
+  padding: 10px;
+  border: 1px solid #000000;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.explore-option:hover {
+  background-color: #f0f0f0;
+}
+
+.explore-option-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.explore-option-content {
+  white-space: pre-wrap;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Model explore settings styles */
+.model-explore-settings {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.explore-n-input, .model-max-tokens-input {
+  width: 40px !important;
+  padding: 3px;
+}
+
+.explore-mode-settings {
+  border-top: 1px solid #cccccc;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
 .conversation-container {
   border: 1px solid #000000;
   background-color: #FFFFFF;

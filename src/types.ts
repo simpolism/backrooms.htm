@@ -1,8 +1,26 @@
+// Settings for explore mode
+export interface ExploreSettings {
+  enabled: boolean;
+  n: number;  // Number of completions to generate
+  maxTokens?: number; // Per-model max tokens setting
+}
+
+// Interface for explore mode completions
+export interface ExploreCompletion {
+  content: string;
+  logprobs?: any;  // For storing probability information
+  index: number;
+  modelIndex: number;
+  modelName: string;
+  selected?: boolean;
+}
+
 export interface ModelInfo {
   api_name: string;
   display_name: string;
   company: string;
   is_custom_selector?: boolean; // New flag to identify special entries
+  exploreSettings?: ExploreSettings;  // Settings for explore mode
 }
 
 export interface Message {

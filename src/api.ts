@@ -1,4 +1,4 @@
-import { Message, StreamingCallback } from './types';
+import { Message, StreamingCallback, ExploreCompletion } from './types';
 
 // Helper function to process streaming responses
 async function processStream(
@@ -77,8 +77,10 @@ export async function openrouterConversation(
   openrouterKey: string,
   maxTokens: number = 1024,
   onChunk?: StreamingCallback,
-  abortSignal?: AbortSignal
-): Promise<string> {
+  abortSignal?: AbortSignal,
+  n: number = 1,  // New parameter for number of completions
+  logprobs?: number  // New parameter for log probabilities
+): Promise<string | ExploreCompletion[]> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
   
   // Add system prompt if provided
@@ -91,8 +93,19 @@ export async function openrouterConversation(
     messages,
     temperature: 1.0,
     max_tokens: maxTokens,
-    stream: true // Enable streaming
+    stream: n === 1 // Only enable streaming when n=1
   };
+  
+  // Add n parameter if greater than 1
+  if (n > 1) {
+    requestBody.n = n;
+  }
+  
+  // Add logprobs if specified
+  if (logprobs) {
+    requestBody.logprobs = logprobs;
+    requestBody.top_logprobs = 5;  // Request top 5 logprobs
+  }
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -111,8 +124,19 @@ export async function openrouterConversation(
       throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
     }
 
-    // Process the stream
-    if (onChunk && response.body) {
+    // Handle non-streaming response with multiple completions
+    if (n > 1) {
+      const data = await response.json();
+      return data.choices.map((choice: any, index: number) => ({
+        content: choice.message.content,
+        logprobs: choice.logprobs,
+        index: index,
+        modelIndex: -1,  // Will be set by the caller
+        modelName: actor
+      }));
+    }
+    // Process the stream for single completion
+    else if (onChunk && response.body) {
       const reader = response.body.getReader();
       return processStream(reader, onChunk);
     } else {
@@ -140,8 +164,10 @@ export async function hyperbolicCompletionConversation(
   hyperbolicKey: string,
   maxTokens: number = 1024,
   onChunk?: StreamingCallback,
-  abortSignal?: AbortSignal
-): Promise<string> {
+  abortSignal?: AbortSignal,
+  n: number = 1,  // New parameter for number of completions
+  logprobs?: number  // New parameter for log probabilities
+): Promise<string | ExploreCompletion[]> {
   // only use messages for system prompt, as llama base prefers a completion prompt
   const messages = [];
   if (systemPrompt) {
@@ -166,14 +192,25 @@ export async function hyperbolicCompletionConversation(
     'Content-Type': 'application/json'
   };
   
-  const payload = {
+  const payload: any = {
     model,
     messages,
     temperature: 1.0,
     max_tokens: maxTokens,
     prompt,
-    stream: true // Enable streaming
+    stream: n === 1 // Only enable streaming when n=1
   };
+  
+  // Add n parameter if greater than 1
+  if (n > 1) {
+    payload.n = n;
+  }
+  
+  // Add logprobs if specified
+  if (logprobs) {
+    payload.logprobs = logprobs;
+    payload.top_logprobs = 5;  // Request top 5 logprobs
+  }
 
   try {
     const response = await fetch('https://api.hyperbolic.xyz/v1/completions', {
@@ -187,8 +224,19 @@ export async function hyperbolicCompletionConversation(
       throw new Error(`Hyperbolic Completion API error: ${response.status} ${response.statusText}`);
     }
 
-    // Process the stream
-    if (onChunk && response.body) {
+    // Handle non-streaming response with multiple completions
+    if (n > 1) {
+      const data = await response.json();
+      return data.choices.map((choice: any, index: number) => ({
+        content: choice.text.trim(),
+        logprobs: choice.logprobs,
+        index: index,
+        modelIndex: -1,  // Will be set by the caller
+        modelName: actor
+      }));
+    }
+    // Process the stream for single completion
+    else if (onChunk && response.body) {
       const reader = response.body.getReader();
       return processStream(reader, onChunk);
     } else {

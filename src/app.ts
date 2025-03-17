@@ -3,7 +3,7 @@ import { MODEL_INFO } from './models';
 import { Conversation } from './conversation';
 import { loadTemplate, getAvailableTemplates, saveCustomTemplate, getCustomTemplate, clearCustomTemplate } from './templates';
 import { generateDistinctColors, getRgbColor, saveToLocalStorage, loadFromLocalStorage } from './utils';
-import { ApiKeys, CustomTemplate, ModelInfo } from './types';
+import { ApiKeys, CustomTemplate, ModelInfo, ExploreCompletion, ExploreSettings } from './types';
 import {
   initiateOAuthFlow,
   handleOAuthCallback,
@@ -19,6 +19,52 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportButton = document.getElementById('export-conversation') as HTMLButtonElement;
   const conversationOutput = document.getElementById('conversation-output') as HTMLDivElement;
   const modelInputs = document.getElementById('model-inputs') as HTMLDivElement;
+  
+  // Create explore container for explore mode
+  const exploreContainer = document.createElement('div');
+  exploreContainer.id = 'explore-container';
+  exploreContainer.className = 'explore-container';
+  exploreContainer.style.display = 'none';
+  exploreContainer.style.marginBottom = '20px';
+  exploreContainer.style.border = '1px solid #000000';
+  exploreContainer.style.padding = '10px';
+  exploreContainer.style.backgroundColor = '#f5f5f5';
+  
+  const exploreHeader = document.createElement('div');
+  exploreHeader.className = 'explore-header';
+  exploreHeader.style.display = 'flex';
+  exploreHeader.style.justifyContent = 'space-between';
+  exploreHeader.style.alignItems = 'center';
+  exploreHeader.style.marginBottom = '10px';
+  
+  const exploreTitle = document.createElement('h3');
+  exploreTitle.textContent = 'Explore Mode: Select a completion';
+  exploreTitle.style.margin = '0';
+  
+  const exploreHistoryButton = document.createElement('button');
+  exploreHistoryButton.id = 'explore-history-button';
+  exploreHistoryButton.className = 'secondary-button';
+  exploreHistoryButton.textContent = 'Show Previous Options';
+  exploreHistoryButton.style.display = 'none'; // Hide initially
+  
+  exploreHeader.appendChild(exploreTitle);
+  exploreHeader.appendChild(exploreHistoryButton);
+  
+  const exploreOptions = document.createElement('div');
+  exploreOptions.id = 'explore-options';
+  exploreOptions.className = 'explore-options';
+  exploreOptions.style.display = 'flex';
+  exploreOptions.style.flexDirection = 'column';
+  exploreOptions.style.gap = '10px';
+  
+  exploreContainer.appendChild(exploreHeader);
+  exploreContainer.appendChild(exploreOptions);
+  
+  // Insert explore container before conversation container
+  const conversationContainer = document.querySelector('.conversation-container');
+  if (conversationContainer) {
+    conversationContainer.parentNode?.insertBefore(exploreContainer, conversationContainer);
+  }
   
   // Create load conversation button and file input
   const loadButton = document.createElement('button');
@@ -167,10 +213,10 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Load saved max output length if available
   maxOutputLengthInput.value = loadFromLocalStorage('maxOutputLength', '512');
-  
-  // Load saved font size and word wrap settings
+  // Load saved font size, word wrap, and explore mode settings
   const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
   const savedWordWrap = loadFromLocalStorage('outputWordWrap', 'true');
+  const savedExploreMode = loadFromLocalStorage('exploreMode', 'false');
   
   // Initialize font size and word wrap with saved values
   let currentFontSize = parseInt(savedFontSize);
@@ -179,6 +225,49 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Initialize word wrap with saved value
   wordWrapToggle.checked = savedWordWrap === 'true';
+  conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
+  
+  // Initialize explore mode toggle
+  const exploreModeToggle = document.getElementById('explore-mode-toggle') as HTMLInputElement;
+  exploreModeToggle.checked = savedExploreMode === 'true';
+  
+  // Add event listener for explore mode toggle
+  exploreModeToggle.addEventListener('change', () => {
+    saveToLocalStorage('exploreMode', exploreModeToggle.checked.toString());
+    
+    // Update all model explore settings based on the global toggle
+    const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
+    const exploreCheckboxes = document.querySelectorAll('.explore-enabled-checkbox') as NodeListOf<HTMLInputElement>;
+    
+    for (let i = 0; i < exploreCheckboxes.length; i++) {
+      const checkbox = exploreCheckboxes[i];
+      const select = allModelSelects[i];
+      
+      // Only update if the checkbox exists and the select exists
+      if (checkbox && select) {
+        checkbox.checked = exploreModeToggle.checked;
+        
+        // Get the n input and max tokens input
+        const nInput = document.getElementById(`explore-n-${i}`) as HTMLInputElement;
+        const maxTokensInput = document.getElementById(`model-max-tokens-${i}`) as HTMLInputElement;
+        
+        if (nInput) {
+          nInput.disabled = !exploreModeToggle.checked;
+        }
+        
+        // Save the explore settings
+        if (select.value) {
+          saveExploreSettings(
+            i,
+            select.value,
+            exploreModeToggle.checked,
+            nInput ? parseInt(nInput.value) : 3,
+            maxTokensInput ? parseInt(maxTokensInput.value) : parseInt(maxOutputLengthInput.value)
+          );
+        }
+      }
+    }
+  });
   conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
 
   // Function to refresh model selects when API keys change
@@ -327,6 +416,25 @@ document.addEventListener('DOMContentLoaded', () => {
     saveToLocalStorage('modelSelections', models);
   }
   
+  // Function to save explore settings for a model
+  function saveExploreSettings(modelIndex: number, modelKey: string, enabled: boolean, n: number, maxTokens: number) {
+    // Save to localStorage
+    saveToLocalStorage(`explore_settings_${modelIndex}`, JSON.stringify({
+      enabled,
+      n,
+      maxTokens
+    }));
+    
+    // Update MODEL_INFO
+    if (MODEL_INFO[modelKey]) {
+      MODEL_INFO[modelKey].exploreSettings = {
+        enabled,
+        n,
+        maxTokens
+      };
+    }
+  }
+  
   // Function to fetch OpenRouter models
   async function fetchOpenRouterModels(apiKey: string): Promise<any[]> {
     try {
@@ -431,12 +539,123 @@ document.addEventListener('DOMContentLoaded', () => {
         select.id = `model-${i}`;
         select.className = 'model-select';
         
+        // Create explore mode settings
+        const exploreGroup = document.createElement('div');
+        exploreGroup.className = 'model-explore-settings';
+        exploreGroup.style.marginTop = '5px';
+        exploreGroup.style.display = 'flex';
+        exploreGroup.style.alignItems = 'center';
+        exploreGroup.style.gap = '10px';
+        
+        // Create explore mode checkbox
+        const exploreCheckboxContainer = document.createElement('div');
+        exploreCheckboxContainer.style.display = 'flex';
+        exploreCheckboxContainer.style.alignItems = 'center';
+        
+        const exploreCheckbox = document.createElement('input');
+        exploreCheckbox.type = 'checkbox';
+        exploreCheckbox.id = `explore-enabled-${i}`;
+        exploreCheckbox.className = 'explore-enabled-checkbox';
+        
+        const exploreLabel = document.createElement('label');
+        exploreLabel.setAttribute('for', `explore-enabled-${i}`);
+        exploreLabel.textContent = 'Explore Mode';
+        exploreLabel.style.marginLeft = '5px';
+        
+        exploreCheckboxContainer.appendChild(exploreCheckbox);
+        exploreCheckboxContainer.appendChild(exploreLabel);
+        
+        // Create n parameter input
+        const nInputContainer = document.createElement('div');
+        nInputContainer.style.display = 'flex';
+        nInputContainer.style.alignItems = 'center';
+        
+        const nInputLabel = document.createElement('label');
+        nInputLabel.setAttribute('for', `explore-n-${i}`);
+        nInputLabel.textContent = 'n:';
+        nInputLabel.style.marginRight = '5px';
+        
+        const nInput = document.createElement('input');
+        nInput.type = 'number';
+        nInput.id = `explore-n-${i}`;
+        nInput.className = 'explore-n-input';
+        nInput.placeholder = 'n';
+        nInput.min = '2';
+        nInput.max = '5';
+        nInput.value = '3';
+        nInput.style.width = '40px';
+        nInput.disabled = true; // Disabled by default
+        
+        nInputContainer.appendChild(nInputLabel);
+        nInputContainer.appendChild(nInput);
+        
+        // Create max tokens input
+        const maxTokensContainer = document.createElement('div');
+        maxTokensContainer.style.display = 'flex';
+        maxTokensContainer.style.alignItems = 'center';
+        
+        const maxTokensLabel = document.createElement('label');
+        maxTokensLabel.setAttribute('for', `model-max-tokens-${i}`);
+        maxTokensLabel.textContent = 'Max Tokens:';
+        maxTokensLabel.style.marginRight = '5px';
+        
+        const maxTokensInput = document.createElement('input');
+        maxTokensInput.type = 'number';
+        maxTokensInput.id = `model-max-tokens-${i}`;
+        maxTokensInput.className = 'model-max-tokens-input';
+        maxTokensInput.placeholder = 'Max Tokens';
+        maxTokensInput.min = '1';
+        maxTokensInput.max = '1024';
+        maxTokensInput.value = maxOutputLengthInput.value || '512'; // Default value
+        maxTokensInput.style.width = '60px';
+        
+        maxTokensContainer.appendChild(maxTokensLabel);
+        maxTokensContainer.appendChild(maxTokensInput);
+        
+        // Add elements to explore group
+        exploreGroup.appendChild(exploreCheckboxContainer);
+        exploreGroup.appendChild(nInputContainer);
+        exploreGroup.appendChild(maxTokensContainer);
+        
+        // Add elements to main group
         newGroup.appendChild(label);
         newGroup.appendChild(select);
+        newGroup.appendChild(document.createElement('br'));
+        newGroup.appendChild(exploreGroup);
         modelInputs.appendChild(newGroup);
         
         // Populate the select
         populateModelSelect(select, i);
+        
+        // Load saved explore settings
+        const savedExploreSettings = loadFromLocalStorage(`explore_settings_${i}`, null);
+        if (savedExploreSettings) {
+          try {
+            const settings = JSON.parse(savedExploreSettings);
+            exploreCheckbox.checked = settings.enabled;
+            nInput.value = settings.n.toString();
+            nInput.disabled = !settings.enabled;
+            if (settings.maxTokens) {
+              maxTokensInput.value = settings.maxTokens.toString();
+            }
+          } catch (e) {
+            console.error('Error parsing saved explore settings:', e);
+          }
+        }
+        
+        // Add event listeners for explore settings
+        exploreCheckbox.addEventListener('change', () => {
+          nInput.disabled = !exploreCheckbox.checked;
+          saveExploreSettings(i, select.value, exploreCheckbox.checked, parseInt(nInput.value), parseInt(maxTokensInput.value));
+        });
+        
+        nInput.addEventListener('change', () => {
+          saveExploreSettings(i, select.value, exploreCheckbox.checked, parseInt(nInput.value), parseInt(maxTokensInput.value));
+        });
+        
+        maxTokensInput.addEventListener('change', () => {
+          saveExploreSettings(i, select.value, exploreCheckbox.checked, parseInt(nInput.value), parseInt(maxTokensInput.value));
+        });
       }
     } catch (error) {
       // Display error message
@@ -1306,6 +1525,96 @@ document.addEventListener('DOMContentLoaded', () => {
     URL.revokeObjectURL(url);
   }
   
+  // Function to display explore completions
+  function displayExploreCompletions(completions: ExploreCompletion[]): void {
+    // Clear existing options
+    exploreOptions.innerHTML = '';
+    
+    // Create options for each completion
+    completions.forEach((completion, index) => {
+      const optionDiv = document.createElement('div');
+      optionDiv.className = 'explore-option';
+      optionDiv.style.padding = '10px';
+      optionDiv.style.border = '1px solid #000000';
+      optionDiv.style.backgroundColor = '#ffffff';
+      optionDiv.style.cursor = 'pointer';
+      optionDiv.style.marginBottom = '10px';
+      optionDiv.style.transition = 'background-color 0.2s';
+      
+      // Add hover effect
+      optionDiv.addEventListener('mouseover', () => {
+        optionDiv.style.backgroundColor = '#f0f0f0';
+      });
+      optionDiv.addEventListener('mouseout', () => {
+        optionDiv.style.backgroundColor = '#ffffff';
+      });
+      
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'explore-option-header';
+      headerDiv.style.display = 'flex';
+      headerDiv.style.justifyContent = 'space-between';
+      headerDiv.style.marginBottom = '5px';
+      headerDiv.style.fontWeight = 'bold';
+      
+      const modelSpan = document.createElement('span');
+      modelSpan.textContent = `${completion.modelName} - Option ${index + 1}`;
+      
+      const probabilitySpan = document.createElement('span');
+      probabilitySpan.textContent = completion.logprobs ? `Probability: ${formatProbability(completion.logprobs)}` : '';
+      
+      headerDiv.appendChild(modelSpan);
+      headerDiv.appendChild(probabilitySpan);
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'explore-option-content';
+      contentDiv.style.whiteSpace = 'pre-wrap';
+      contentDiv.textContent = completion.content;
+      
+      optionDiv.appendChild(headerDiv);
+      optionDiv.appendChild(contentDiv);
+      
+      // Add click handler
+      optionDiv.addEventListener('click', () => {
+        handleExploreCompletionSelected(completion);
+      });
+      
+      exploreOptions.appendChild(optionDiv);
+    });
+    
+    // Show the explore container
+    exploreContainer.style.display = 'block';
+    
+    // Hide the explore history button for now (will be implemented later)
+    exploreHistoryButton.style.display = 'none';
+  }
+  
+  // Function to format probability
+  function formatProbability(logprobs: any): string {
+    if (!logprobs) return 'N/A';
+    
+    // This is a placeholder - the actual implementation would depend on the format of logprobs
+    // returned by the API
+    return 'N/A';
+  }
+  
+  // Function to handle when a completion is selected
+  function handleExploreCompletionSelected(completion: ExploreCompletion): void {
+    // Hide the explore container
+    exploreContainer.style.display = 'none';
+    
+    // Add the selected completion to the conversation output
+    addOutputMessage(completion.modelName, completion.content);
+    
+    // Resume the conversation
+    if (activeConversation) {
+      activeConversation.resume();
+      
+      // Update UI
+      pauseButton.style.display = 'inline-block';
+      resumeButton.style.display = 'none';
+    }
+  }
+  
   // Add message to conversation output
   function addOutputMessage(actor: string, content: string, elementId?: string, isLoading: boolean = false) {
     // Get or assign color for this actor
@@ -1451,7 +1760,9 @@ document.addEventListener('DOMContentLoaded', () => {
         apiKeys,
         maxTurns,
         maxOutputLength,
-        addOutputMessage
+        addOutputMessage,
+        displayExploreCompletions,
+        handleExploreCompletionSelected
       );
       
       addOutputMessage('System', `Starting conversation with template "${templateName}"...`);
