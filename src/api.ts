@@ -78,8 +78,7 @@ export async function openrouterConversation(
   maxTokens: number = 1024,
   onChunk?: StreamingCallback,
   abortSignal?: AbortSignal,
-  n: number = 1,  // New parameter for number of completions
-  logprobs?: number  // New parameter for log probabilities
+  n: number = 1,  // Parameter for number of completions
 ): Promise<string | ExploreCompletion[]> {
   const messages = context.map(m => ({ role: m.role, content: m.content }));
   
@@ -99,12 +98,6 @@ export async function openrouterConversation(
   // Add n parameter if greater than 1
   if (n > 1) {
     requestBody.n = n;
-  }
-  
-  // Add logprobs if specified
-  if (logprobs) {
-    requestBody.logprobs = logprobs;
-    requestBody.top_logprobs = 5;  // Request top 5 logprobs
   }
 
   try {
@@ -129,7 +122,6 @@ export async function openrouterConversation(
       const data = await response.json();
       return data.choices.map((choice: any, index: number) => ({
         content: choice.message.content,
-        logprobs: choice.logprobs,
         index: index,
         modelIndex: -1,  // Will be set by the caller
         modelName: actor
@@ -165,8 +157,7 @@ export async function hyperbolicCompletionConversation(
   maxTokens: number = 1024,
   onChunk?: StreamingCallback,
   abortSignal?: AbortSignal,
-  n: number = 1,  // New parameter for number of completions
-  logprobs?: number  // New parameter for log probabilities
+  n: number = 1,  // Parameter for number of completions
 ): Promise<string | ExploreCompletion[]> {
   // only use messages for system prompt, as llama base prefers a completion prompt
   const messages = [];
@@ -205,12 +196,6 @@ export async function hyperbolicCompletionConversation(
   if (n > 1) {
     payload.n = n;
   }
-  
-  // Add logprobs if specified
-  if (logprobs) {
-    payload.logprobs = logprobs;
-    payload.top_logprobs = 5;  // Request top 5 logprobs
-  }
 
   try {
     const response = await fetch('https://api.hyperbolic.xyz/v1/completions', {
@@ -229,7 +214,6 @@ export async function hyperbolicCompletionConversation(
       const data = await response.json();
       return data.choices.map((choice: any, index: number) => ({
         content: choice.text.trim(),
-        logprobs: choice.logprobs,
         index: index,
         modelIndex: -1,  // Will be set by the caller
         modelName: actor

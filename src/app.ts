@@ -213,10 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Load saved max output length if available
   maxOutputLengthInput.value = loadFromLocalStorage('maxOutputLength', '512');
-  // Load saved font size, word wrap, and explore mode settings
+  // Load saved font size and word wrap settings
   const savedFontSize = loadFromLocalStorage('outputFontSize', '14');
   const savedWordWrap = loadFromLocalStorage('outputWordWrap', 'true');
-  const savedExploreMode = loadFromLocalStorage('exploreMode', 'false');
   
   // Initialize font size and word wrap with saved values
   let currentFontSize = parseInt(savedFontSize);
@@ -225,49 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Initialize word wrap with saved value
   wordWrapToggle.checked = savedWordWrap === 'true';
-  conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
-  
-  // Initialize explore mode toggle
-  const exploreModeToggle = document.getElementById('explore-mode-toggle') as HTMLInputElement;
-  exploreModeToggle.checked = savedExploreMode === 'true';
-  
-  // Add event listener for explore mode toggle
-  exploreModeToggle.addEventListener('change', () => {
-    saveToLocalStorage('exploreMode', exploreModeToggle.checked.toString());
-    
-    // Update all model explore settings based on the global toggle
-    const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
-    const exploreCheckboxes = document.querySelectorAll('.explore-enabled-checkbox') as NodeListOf<HTMLInputElement>;
-    
-    for (let i = 0; i < exploreCheckboxes.length; i++) {
-      const checkbox = exploreCheckboxes[i];
-      const select = allModelSelects[i];
-      
-      // Only update if the checkbox exists and the select exists
-      if (checkbox && select) {
-        checkbox.checked = exploreModeToggle.checked;
-        
-        // Get the n input and max tokens input
-        const nInput = document.getElementById(`explore-n-${i}`) as HTMLInputElement;
-        const maxTokensInput = document.getElementById(`model-max-tokens-${i}`) as HTMLInputElement;
-        
-        if (nInput) {
-          nInput.disabled = !exploreModeToggle.checked;
-        }
-        
-        // Save the explore settings
-        if (select.value) {
-          saveExploreSettings(
-            i,
-            select.value,
-            exploreModeToggle.checked,
-            nInput ? parseInt(nInput.value) : 3,
-            maxTokensInput ? parseInt(maxTokensInput.value) : parseInt(maxOutputLengthInput.value)
-          );
-        }
-      }
-    }
-  });
   conversationOutput.style.whiteSpace = wordWrapToggle.checked ? 'pre-wrap' : 'pre';
 
   // Function to refresh model selects when API keys change
@@ -638,9 +594,29 @@ document.addEventListener('DOMContentLoaded', () => {
             if (settings.maxTokens) {
               maxTokensInput.value = settings.maxTokens.toString();
             }
+            
+            // Save the settings to MODEL_INFO on page load
+            if (select.value) {
+              saveExploreSettings(
+                i,
+                select.value,
+                settings.enabled,
+                settings.n,
+                settings.maxTokens || parseInt(maxOutputLengthInput.value)
+              );
+            }
           } catch (e) {
             console.error('Error parsing saved explore settings:', e);
           }
+        } else if (select.value) {
+          // Initialize with default values (disabled)
+          saveExploreSettings(
+            i,
+            select.value,
+            false, // Default to disabled
+            parseInt(nInput.value) || 3,
+            parseInt(maxTokensInput.value) || parseInt(maxOutputLengthInput.value)
+          );
         }
         
         // Add event listeners for explore settings
@@ -1559,11 +1535,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const modelSpan = document.createElement('span');
       modelSpan.textContent = `${completion.modelName} - Option ${index + 1}`;
       
-      const probabilitySpan = document.createElement('span');
-      probabilitySpan.textContent = completion.logprobs ? `Probability: ${formatProbability(completion.logprobs)}` : '';
-      
       headerDiv.appendChild(modelSpan);
-      headerDiv.appendChild(probabilitySpan);
       
       const contentDiv = document.createElement('div');
       contentDiv.className = 'explore-option-content';
@@ -1575,7 +1547,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Add click handler
       optionDiv.addEventListener('click', () => {
-        handleExploreCompletionSelected(completion);
+        activeConversation?.selectCompletion(index);
       });
       
       exploreOptions.appendChild(optionDiv);
@@ -1588,27 +1560,13 @@ document.addEventListener('DOMContentLoaded', () => {
     exploreHistoryButton.style.display = 'none';
   }
   
-  // Function to format probability
-  function formatProbability(logprobs: any): string {
-    if (!logprobs) return 'N/A';
-    
-    // This is a placeholder - the actual implementation would depend on the format of logprobs
-    // returned by the API
-    return 'N/A';
-  }
-  
   // Function to handle when a completion is selected
   function handleExploreCompletionSelected(completion: ExploreCompletion): void {
     // Hide the explore container
     exploreContainer.style.display = 'none';
-    
-    // Add the selected completion to the conversation output
-    addOutputMessage(completion.modelName, completion.content);
-    
+
     // Resume the conversation
-    if (activeConversation) {
-      activeConversation.resume();
-      
+    if (activeConversation) {      
       // Update UI
       pauseButton.style.display = 'inline-block';
       resumeButton.style.display = 'none';

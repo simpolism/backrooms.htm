@@ -8,7 +8,6 @@ export interface ExploreSettings {
 // Interface for explore mode completions
 export interface ExploreCompletion {
   content: string;
-  logprobs?: any;  // For storing probability information
   index: number;
   modelIndex: number;
   modelName: string;

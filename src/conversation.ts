@@ -16,8 +16,7 @@ export function generateModelResponse(
   modelIndex?: number,
   onChunk?: StreamingCallback,
   abortSignal?: AbortSignal,
-  n: number = 1,  // New parameter for number of completions
-  logprobs?: number  // New parameter for log probabilities
+  n: number = 1,
 ): Promise<string | ExploreCompletion[]> {
   // Determine which API to use based on the company
   const company = modelInfo.company;
@@ -40,8 +39,7 @@ export function generateModelResponse(
       tokensToUse,
       useExploreMode ? undefined : onChunk,  // Don't use streaming in explore mode
       abortSignal,
-      completionsCount,
-      useExploreMode ? 5 : undefined  // Request logprobs in explore mode
+      completionsCount
     );
   } else if (company === 'openrouter') {
     // If this is the custom OpenRouter model, use the saved API name
@@ -70,8 +68,7 @@ export function generateModelResponse(
       tokensToUse,
       useExploreMode ? undefined : onChunk,  // Don't use streaming in explore mode
       abortSignal,
-      completionsCount,
-      useExploreMode ? 5 : undefined  // Request logprobs in explore mode
+      completionsCount
     );
   } else {
     throw new Error(`Unsupported model company: ${company}`);
@@ -203,10 +200,11 @@ export class Conversation {
     // Create a new AbortController for this turn
     this.abortController = new AbortController();
     
-    // Update explore mode status
+    // Update explore mode status - this checks if any model has explore mode enabled
     this.exploreMode = this.isExploreMode();
     
     // Clear explore completions for this turn
+    // Each model with explore mode will generate its own completions
     this.exploreCompletions = [];
     
     for (let i = 0; i < this.models.length; i++) {
@@ -230,6 +228,7 @@ export class Conversation {
       // Create a unique ID for this response
       const responseId = `response-${Date.now()}-${i}`;
       
+      console.log('getting model response, explore mode: ', useExploreMode);
       try {
         if (useExploreMode) {
           // Explore mode is enabled for this model
@@ -246,7 +245,6 @@ export class Conversation {
             undefined, // No streaming callback in explore mode
             this.abortController.signal, // Pass the abort signal
             exploreSettings.n || 3, // Use n from settings or default to 3
-            5 // Request logprobs
           ) as ExploreCompletion[];
           
           // Set model index for each completion
@@ -255,17 +253,13 @@ export class Conversation {
             completion.modelName = this.modelDisplayNames[i];
           });
           
-          // Add completions to explore completions
-          this.exploreCompletions.push(...completions);
+          // Clear previous completions and add new ones from this model
+          // This ensures we only show completions from the current model in explore mode
+          this.exploreCompletions = completions;
           
-          // If all models with explore mode enabled have been processed,
-          // call the callback to display completions
-          const remainingModels = this.models.slice(i + 1).filter((model) => {
-            const info = MODEL_INFO[model];
-            return info.exploreSettings?.enabled;
-          });
-          
-          if (remainingModels.length === 0 && this.onExploreCompletionsCallback && this.exploreCompletions.length > 0) {
+          // For each model with explore mode, we need to pause and wait for user selection
+          // before proceeding to the next model
+          if (this.onExploreCompletionsCallback && this.exploreCompletions.length > 0) {
             // Call the callback to display completions
             this.onExploreCompletionsCallback(this.exploreCompletions);
             
@@ -294,16 +288,23 @@ export class Conversation {
                 // Clear explore completions
                 this.exploreCompletions = [];
                 
+                // Call the original callback
+                if (originalOnCompletionSelected) {
+                  originalOnCompletionSelected(completion);
+                }
+
                 // Resume conversation
                 this.resume();
                 
                 // Restore original callback
                 this.onCompletionSelectedCallback = originalOnCompletionSelected;
-                
+
                 // Resolve promise
                 resolve();
               };
             });
+
+            console.log('finished user selection, moving to next call');
           }
         } else {
           // Regular mode (no explore)
