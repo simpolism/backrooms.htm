@@ -62,23 +62,13 @@ const App: React.FC = () => {
         conversationOutput={conversationOutput}
         setConversationOutput={setConversationOutput}
       />
-      
-      {/* Debug: Add a comment to verify this component is being included */}
-      {/* ConversationContainer should render below */}
+
       <ConversationContainer
         conversationOutput={conversationOutput}
         fontSize={fontSize}
         wordWrap={wordWrap}
       />
-      
-      {/* Debug: Add a div to verify rendering is working */}
-      <div style={{border: '1px solid red', padding: '10px', margin: '10px 0'}}>
-        Debug: Conversation Output Count: {conversationOutput.length}
-        {conversationOutput.length > 0 && (
-          <div>Last message from: {conversationOutput[conversationOutput.length-1].actor}</div>
-        )}
-      </div>
-      
+
       <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '12px', color: '#666666' }}>
         <hr />
         Last updated: March 2025 | <a href="https://github.com/simpolism/backrooms.directory" target="_blank" rel="noopener noreferrer">GitHub</a>
