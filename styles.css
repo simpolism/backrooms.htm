@@ -673,7 +673,7 @@ input:disabled + .toggle-slider:before {
 }
 
 .explore-mode-outputs {
-  height: 400px; /* Fixed height instead of just max-height */
+  height: 300px; /* Fixed height instead of just max-height */
   overflow-y: auto;
   padding-bottom: 10px; /* Add padding to prevent bottom line from being cut off */
 }
