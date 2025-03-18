@@ -270,7 +270,7 @@ export class Conversation {
         `Model ${modelIndex + 1}`;
       
       this.outputCallback(
-        `${modelName} (Option ${optionNumber + 1})`,
+        `${modelName}`,
         updatedContent,
         responseId,
         false
@@ -345,7 +345,7 @@ export class Conversation {
       // Make the request
       const requestPromise = generateModelResponse(
         modelInfo,
-        `${modelName} (Option ${i + 1})`,
+        `${modelName}`,
         this.contexts[modelIndex],
         this.systemPrompts[modelIndex],
         this.apiKeys,

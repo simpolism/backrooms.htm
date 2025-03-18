@@ -88,7 +88,8 @@ button:active {
 
 /* Disabled elements styling */
 input:disabled,
-button:disabled {
+button:disabled,
+select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background-color: #EEEEEE;

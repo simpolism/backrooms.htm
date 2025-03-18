@@ -1602,6 +1602,26 @@ document.addEventListener('DOMContentLoaded', () => {
       maxTokensInputs.forEach(input => {
         input.disabled = false;
       });
+      
+      // Re-enable model and template dropdowns
+      const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
+      allModelSelects.forEach(select => {
+        select.disabled = false;
+      });
+      templateSelect.disabled = false;
+      
+      // Re-enable template-related buttons
+      const templateButtons = [
+        document.getElementById('edit-current-template') as HTMLButtonElement,
+        document.getElementById('import-template') as HTMLButtonElement,
+        document.getElementById('edit-custom-template') as HTMLButtonElement
+      ];
+      
+      templateButtons.forEach(button => {
+        if (button) {
+          button.disabled = false;
+        }
+      });
     }
   }
   
@@ -1647,6 +1667,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Re-enable all max tokens inputs
     maxTokensInputs.forEach(input => {
       input.disabled = false;
+    });
+    
+    // Re-enable model and template dropdowns
+    const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
+    allModelSelects.forEach(select => {
+      select.disabled = false;
+    });
+    templateSelect.disabled = false;
+    
+    // Re-enable template-related buttons
+    const templateButtons = [
+      document.getElementById('edit-current-template') as HTMLButtonElement,
+      document.getElementById('import-template') as HTMLButtonElement,
+      document.getElementById('edit-custom-template') as HTMLButtonElement
+    ];
+    
+    templateButtons.forEach(button => {
+      if (button) {
+        button.disabled = false;
+      }
     });
     
     // Clear existing conversation
@@ -1838,6 +1878,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Disable all max tokens inputs
     maxTokensInputs.forEach(input => {
       input.disabled = true;
+    });
+    
+    // Disable model and template dropdowns
+    allModelSelects.forEach(select => {
+      select.disabled = true;
+    });
+    templateSelect.disabled = true;
+    
+    // Disable template-related buttons
+    const templateButtons = [
+      document.getElementById('edit-current-template') as HTMLButtonElement,
+      document.getElementById('import-template') as HTMLButtonElement,
+      document.getElementById('edit-custom-template') as HTMLButtonElement
+    ];
+    
+    templateButtons.forEach(button => {
+      if (button) {
+        button.disabled = true;
+      }
     });
     
     // Get API keys
