@@ -99,6 +99,8 @@ export class Conversation {
   private parallelResponses: Map<string, ParallelResponse> = new Map(); // Track parallel responses for explore mode
   private selectedResponseId: string | null = null; // Track which response was selected
   private exploreAbortControllers: Map<string, AbortController> = new Map(); // For cancelling parallel requests
+  private selectedMainOutputId: string | null = null; // Track the ID for the selected response in the main output
+  private selectedMainOutputContent: string = ""; // Track the content for the selected response in the main output
 
   constructor(
     models: string[],
@@ -202,6 +204,9 @@ export class Conversation {
     // Mark this response as selected
     this.selectedResponseId = responseId;
     
+    // Get the selected response
+    const selectedResponse = this.parallelResponses.get(responseId);
+    
     // Update all responses to reflect selection
     for (const [id, response] of this.parallelResponses.entries()) {
       const isSelected = id === responseId;
@@ -216,6 +221,28 @@ export class Conversation {
         this.exploreAbortControllers.delete(id);
       }
     }
+    
+    // Extract model index from responseId
+    // Format is "explore-timestamp-modelIndex-optionNumber"
+    const parts = responseId.split('-');
+    let modelIndex = 0;
+    
+    if (parts.length >= 4) {
+      try {
+        modelIndex = parseInt(parts[2]);
+      } catch (e) {
+        console.error("Error parsing responseId parts:", e);
+      }
+    }
+    
+    // Create a unique ID for this response in the main output
+    this.selectedMainOutputId = `main-output-${Date.now()}`;
+    
+    // Initialize the content with what we have so far
+    this.selectedMainOutputContent = selectedResponse ? selectedResponse.content : "";
+    
+    // Note: We don't output anything here - the streaming callback will handle it
+    // This prevents duplicate messages in the output box
     
     // Notify the selection callback if provided
     if (this.selectionCallback) {
@@ -269,6 +296,7 @@ export class Conversation {
         this.modelDisplayNames[modelIndex] :
         `Model ${modelIndex + 1}`;
       
+      // Always update the explore window
       this.outputCallback(
         `${modelName}`,
         updatedContent,
@@ -276,9 +304,23 @@ export class Conversation {
         false
       );
       
-      // If this is the selected response and we have a selection callback, notify it
-      if (response.isSelected && this.selectionCallback) {
-        this.selectionCallback(responseId);
+      // If this is the selected response, also update the main output window with cursor
+      if (response.isSelected && this.selectedMainOutputId) {
+        // Update the accumulated content
+        this.selectedMainOutputContent = updatedContent;
+        
+        // Update the main output window with cursor
+        this.outputCallback(
+          modelName,
+          this.selectedMainOutputContent + (isDone ? "" : "█"),
+          this.selectedMainOutputId,
+          false
+        );
+        
+        // Notify the selection callback if provided
+        if (this.selectionCallback) {
+          this.selectionCallback(responseId);
+        }
       }
     };
   }
@@ -313,6 +355,8 @@ export class Conversation {
     // Reset parallel responses and selected response
     this.parallelResponses.clear();
     this.selectedResponseId = null;
+    this.selectedMainOutputId = null;
+    this.selectedMainOutputContent = "";
     
     // Clear any existing abort controllers
     for (const controller of this.exploreAbortControllers.values()) {
@@ -363,11 +407,25 @@ export class Conversation {
             content: response,
             isComplete: true
           });
-        }
-        
-        // If this is the selected response and we have a selection callback, notify it
-        if (currentResponse?.isSelected && this.selectionCallback) {
-          this.selectionCallback(responseId);
+          
+          // If this is the selected response, update the main output window with the final content
+          if (currentResponse.isSelected && this.selectedMainOutputId) {
+            // Update the accumulated content
+            this.selectedMainOutputContent = response;
+            
+            // Final update without cursor
+            this.outputCallback(
+              this.modelDisplayNames[modelIndex],
+              this.selectedMainOutputContent,
+              this.selectedMainOutputId,
+              false
+            );
+            
+            // If we have a selection callback, notify it
+            if (this.selectionCallback) {
+              this.selectionCallback(responseId);
+            }
+          }
         }
       }).catch(error => {
         console.error(`Error in parallel request ${i} for ${modelName}:`, error);
@@ -379,15 +437,31 @@ export class Conversation {
           // For other errors, update the response with an error message
           const currentResponse = this.parallelResponses.get(responseId);
           if (currentResponse) {
+            const errorMessage = `Error: ${error instanceof Error ? error.message : String(error)}`;
+            
             this.parallelResponses.set(responseId, {
               ...currentResponse,
-              content: `Error: ${error instanceof Error ? error.message : String(error)}`,
+              content: errorMessage,
               isComplete: true
             });
             
-            // If this is the selected response and we have a selection callback, notify it
-            if (currentResponse.isSelected && this.selectionCallback) {
-              this.selectionCallback(responseId);
+            // If this is the selected response, update the main output window with the error
+            if (currentResponse.isSelected && this.selectedMainOutputId) {
+              // Update the accumulated content
+              this.selectedMainOutputContent = errorMessage;
+              
+              // Final update without cursor
+              this.outputCallback(
+                this.modelDisplayNames[modelIndex],
+                this.selectedMainOutputContent,
+                this.selectedMainOutputId,
+                false
+              );
+              
+              // If we have a selection callback, notify it
+              if (this.selectionCallback) {
+                this.selectionCallback(responseId);
+              }
             }
           }
         }
@@ -396,14 +470,20 @@ export class Conversation {
       requestPromises.push(requestPromise);
     }
     
-    // Wait for user to select a response
+    // Wait for user to select a response AND for it to complete
     return new Promise<string>((resolve, reject) => {
-      // Create a function to check if a response has been selected
-      const checkSelection = () => {
+      // Create a function to check if a response has been selected and completed
+      const checkSelectionAndCompletion = () => {
         if (this.selectedResponseId) {
           const selectedResponse = this.parallelResponses.get(this.selectedResponseId);
           if (selectedResponse) {
-            resolve(selectedResponse.content);
+            // Only resolve if the selected response is complete
+            if (selectedResponse.isComplete) {
+              resolve(selectedResponse.content);
+            } else {
+              // If selected but not complete, check again in 200ms
+              setTimeout(checkSelectionAndCompletion, 200);
+            }
           } else {
             console.error("Selected response not found in parallelResponses map");
             reject(new Error('Selected response not found'));
@@ -411,13 +491,13 @@ export class Conversation {
         } else if (!this.isRunning) {
           reject(new Error('Conversation stopped'));
         } else {
-          // Check again in 200ms
-          setTimeout(checkSelection, 200);
+          // No selection yet, check again in 200ms
+          setTimeout(checkSelectionAndCompletion, 200);
         }
       };
       
-      // Start checking for selection
-      checkSelection();
+      // Start checking for selection and completion
+      checkSelectionAndCompletion();
     });
   }
 
@@ -447,15 +527,11 @@ export class Conversation {
         
         if (isExploreEnabled) {
           // Use explore mode with parallel requests
+          // This will wait until a response is selected AND completed
           response = await this.makeParallelRequests(i, this.maxTokensPerModel[i]);
           
-          // Add the selected response to the conversation output
-          this.outputCallback(
-            this.modelDisplayNames[i],
-            response,
-            undefined,
-            false
-          );
+          // The response is already displayed in the main output window,
+          // so we don't need to output it again
         } else {
           // Create a unique ID for this response
           const responseId = `response-${Date.now()}-${i}`;
