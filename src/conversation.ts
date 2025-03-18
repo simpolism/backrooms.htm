@@ -241,8 +241,16 @@ export class Conversation {
     // Initialize the content with what we have so far
     this.selectedMainOutputContent = selectedResponse ? selectedResponse.content : "";
     
-    // Note: We don't output anything here - the streaming callback will handle it
-    // This prevents duplicate messages in the output box
+    // If the response is already complete, output it to the main output window immediately
+    // Otherwise, the streaming callback will handle it
+    if (selectedResponse && selectedResponse.isComplete) {
+      this.outputCallback(
+        this.modelDisplayNames[modelIndex],
+        this.selectedMainOutputContent,
+        this.selectedMainOutputId,
+        false
+      );
+    }
     
     // Notify the selection callback if provided
     if (this.selectionCallback) {
