@@ -433,6 +433,7 @@ input:disabled + .toggle-slider:before {
 /* Disclaimer Styles */
 .api-key-disclaimer,
 .template-disclaimer,
+.template-credits,
 .model-disclaimer {
   font-size: 12px;
   margin-top: 0;
