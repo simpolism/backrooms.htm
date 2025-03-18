@@ -37,7 +37,12 @@
       <p class="site-tagline">in which the AIs explore the backrooms together</p>
     </header>
     
-    <div class="settings-panel">
+    <div id="settings" class="settings-panel collapsible-section">
+      <div class="collapsible-header">
+        <h2>Settings</h2>
+        <span class="collapse-indicator">▼</span>
+      </div>
+      <div class="collapsible-content">
       <div class="api-keys collapsible-section collapsed">
         <div class="collapsible-header">
           <h2>API Keys</h2>
@@ -173,20 +178,18 @@
             <input type="number" id="max-turns" placeholder="Default: infinity" min="1" class="output-setting-input">
           </div>
           <div class="output-setting-group">
-            <label for="max-output-length">Max Tokens Per Reply:</label>
-            <input type="number" id="max-output-length" placeholder="512" value="512" min="0" max="1024" step="128" class="output-setting-input">
-          </div>
-          <div class="output-setting-group">
             <label for="seed">Seed (deterministic):</label>
             <input type="number" id="seed" placeholder="Random if empty" min="1" class="output-setting-input">
           </div>
         </div>
       </div>
       
-      <div class="button-container">
-        <button id="start-conversation" class="primary-button">Start Conversation</button>
-        <button id="export-conversation" class="secondary-button" style="display: none;">Export Conversation</button>
       </div>
+    </div>
+    
+    <div class="button-container">
+      <button id="start-conversation" class="primary-button">Start Conversation</button>
+      <button id="export-conversation" class="secondary-button" style="display: none;">Export Conversation</button>
     </div>
     
     <!-- Explore Mode Output Container -->

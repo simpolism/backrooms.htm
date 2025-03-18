@@ -86,7 +86,7 @@ export class Conversation {
   private isRunning: boolean = false;
   private isPaused: boolean = false; // New state for pause functionality
   private maxTurns: number;
-  private maxOutputLength: number;
+  private maxTokensPerModel: number[];
   private seed?: number; // Optional seed for deterministic responses
   private currentTurn: number = 0;
   private currentResponses: Map<string, string> = new Map(); // Track responses for each model
@@ -106,7 +106,7 @@ export class Conversation {
     contexts: Message[][],
     apiKeys: ApiKeys,
     maxTurns: number = Infinity,
-    maxOutputLength: number = 1024,
+    maxTokensPerModel: number[] | number = 1024,
     outputCallback: (actor: string, response: string, elementId?: string, isLoading?: boolean) => void,
     seed?: number,
     exploreModeSettings: ExploreModeSettings = {},
@@ -117,7 +117,15 @@ export class Conversation {
     this.contexts = contexts;
     this.apiKeys = apiKeys;
     this.maxTurns = maxTurns;
-    this.maxOutputLength = maxOutputLength;
+    
+    // Handle both array and single number for backward compatibility
+    if (Array.isArray(maxTokensPerModel)) {
+      this.maxTokensPerModel = maxTokensPerModel;
+    } else {
+      // If a single number is provided, create an array with the same value for all models
+      this.maxTokensPerModel = Array(models.length).fill(maxTokensPerModel);
+    }
+    
     this.outputCallback = outputCallback;
     this.seed = seed;
     this.exploreModeSettings = exploreModeSettings;
@@ -280,7 +288,7 @@ export class Conversation {
    * @param modelIndex The index of the model
    * @returns The selected response content
    */
-  private async makeParallelRequests(modelIndex: number): Promise<string> {
+  private async makeParallelRequests(modelIndex: number, maxTokens: number): Promise<string> {
     const modelKey = this.models[modelIndex];
     const modelInfo = MODEL_INFO[modelKey];
     const modelName = this.modelDisplayNames[modelIndex];
@@ -341,7 +349,7 @@ export class Conversation {
         this.contexts[modelIndex],
         this.systemPrompts[modelIndex],
         this.apiKeys,
-        this.maxOutputLength,
+        maxTokens,
         modelIndex,
         streamingCallback,
         abortController.signal,
@@ -439,7 +447,7 @@ export class Conversation {
         
         if (isExploreEnabled) {
           // Use explore mode with parallel requests
-          response = await this.makeParallelRequests(i);
+          response = await this.makeParallelRequests(i, this.maxTokensPerModel[i]);
           
           // Add the selected response to the conversation output
           this.outputCallback(
@@ -484,7 +492,7 @@ export class Conversation {
             this.contexts[i],
             this.systemPrompts[i],
             this.apiKeys,
-            this.maxOutputLength,
+            this.maxTokensPerModel[i],
             i, // Pass the model index
             streamingCallback, // Pass the streaming callback
             this.abortController.signal, // Pass the abort signal

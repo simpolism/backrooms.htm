@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize UI elements
   const templateSelect = document.getElementById('template-select') as HTMLSelectElement;
   const maxTurnsInput = document.getElementById('max-turns') as HTMLInputElement;
-  const maxOutputLengthInput = document.getElementById('max-output-length') as HTMLInputElement;
   const seedInput = document.getElementById('seed') as HTMLInputElement;
   const startButton = document.getElementById('start-conversation') as HTMLButtonElement;
   const exportButton = document.getElementById('export-conversation') as HTMLButtonElement;
@@ -71,8 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else {
       // Set default states for sections
-      if (sectionId === 'output-settings' || sectionId === 'api-keys') {
-        // Output settings and API keys should be open by default
+      if (sectionId === 'settings' || sectionId === 'output-settings' || sectionId === 'api-keys') {
+        // Settings panel, output settings, and API keys should be open by default
         section.classList.remove('collapsed');
       } else if (sectionId === 'template-editor') {
         // Template editor should be closed by default
@@ -168,8 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     openrouterAuthContainer.dataset.timeoutId = timeoutId.toString();
   }
   
-  // Load saved max output length if available
-  maxOutputLengthInput.value = loadFromLocalStorage('maxOutputLength', '512');
+  // Max output length is now per-model and loaded in updateModelInputs
   
   // Load saved seed if available
   seedInput.value = loadFromLocalStorage('seed', '');
@@ -499,6 +497,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentValue = i < currentSelections.length ? currentSelections[i] : null;
         populateModelSelect(select, i, currentValue);
         
+        // Create max tokens input group
+        const maxTokensGroup = document.createElement('div');
+        maxTokensGroup.className = 'max-tokens-input-group';
+        
+        // Create label for max tokens
+        const maxTokensLabel = document.createElement('label');
+        maxTokensLabel.setAttribute('for', `max-tokens-${i}`);
+        maxTokensLabel.textContent = `Max Completion Tokens:`;
+        
+        // Create input for max tokens
+        const maxTokensInput = document.createElement('input');
+        maxTokensInput.type = 'number';
+        maxTokensInput.id = `max-tokens-${i}`;
+        maxTokensInput.className = 'max-tokens-input';
+        maxTokensInput.min = '0';
+        maxTokensInput.max = '1024';
+        maxTokensInput.step = '128';
+        maxTokensInput.placeholder = '512';
+        
+        // Load saved max tokens value if available
+        const savedMaxTokens = loadFromLocalStorage(`max-tokens-${i}`, '512');
+        maxTokensInput.value = savedMaxTokens;
+        
+        // Add event listener for max tokens input
+        maxTokensInput.addEventListener('change', () => {
+          let value = parseInt(maxTokensInput.value);
+          // Ensure the value is within the valid range
+          value = Math.max(1, Math.min(value, 1024));
+          maxTokensInput.value = value.toString();
+          saveToLocalStorage(`max-tokens-${i}`, value.toString());
+        });
+        
+        // Add elements to max tokens group
+        maxTokensGroup.appendChild(maxTokensLabel);
+        maxTokensGroup.appendChild(maxTokensInput);
+        
+        // Add max tokens group after the model input group
+        modelInputs.appendChild(maxTokensGroup);
+        
         // Create explore mode toggle group
         const exploreGroup = document.createElement('div');
         exploreGroup.className = 'explore-mode-input-group';
@@ -530,7 +567,17 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleContainer.appendChild(toggleInput);
         toggleContainer.appendChild(toggleSlider);
         
-        // Create number input for n (number of requests)
+        // Create container for num requests input and label
+        const numRequestsContainer = document.createElement('div');
+        numRequestsContainer.className = toggleInput.checked ? 'num-requests-container' : 'num-requests-container hidden';
+        
+        // Create label for n (number of requests)
+        const numRequestsLabel = document.createElement('label');
+        numRequestsLabel.textContent = 'Num Choices:';
+        numRequestsLabel.setAttribute('for', `explore-mode-num-requests-${i}`);
+        numRequestsLabel.style.marginRight = '5px';
+        
+        // Create input for n (number of requests)
         const numRequestsInput = document.createElement('input');
         numRequestsInput.type = 'number';
         numRequestsInput.id = `explore-mode-num-requests-${i}`;
@@ -539,13 +586,18 @@ document.addEventListener('DOMContentLoaded', () => {
         numRequestsInput.max = '8';
         numRequestsInput.value = (savedSetting?.numRequests || 3).toString();
         
-        // Show/hide number input based on toggle state
-        numRequestsInput.style.display = toggleInput.checked ? 'block' : 'none';
+        // Add label and input to container
+        numRequestsContainer.appendChild(numRequestsLabel);
+        numRequestsContainer.appendChild(numRequestsInput);
         
         // Add event listener for toggle
         toggleInput.addEventListener('change', () => {
-          // Show/hide number input based on toggle state
-          numRequestsInput.style.display = toggleInput.checked ? 'block' : 'none';
+          // Show/hide number requests container based on toggle state
+          if (toggleInput.checked) {
+            numRequestsContainer.classList.remove('hidden');
+          } else {
+            numRequestsContainer.classList.add('hidden');
+          }
           
           // Update settings
           const settings = loadExploreModeSettings();
@@ -591,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add elements to input group
         exploreGroup.appendChild(exploreLabel);
         exploreGroup.appendChild(toggleContainer);
-        exploreGroup.appendChild(numRequestsInput);
+        exploreGroup.appendChild(numRequestsContainer);
         
         // Add explore group after the model input group
         modelInputs.appendChild(exploreGroup);
@@ -1023,16 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
       addOutputMessage('System', 'Error loading templates. Please check the console for details.');
     }
   }
-  
-  // Save max output length when changed and enforce limits
-  maxOutputLengthInput.addEventListener('change', () => {
-    let value = parseInt(maxOutputLengthInput.value);
-    // Ensure the value is within the valid range
-    value = Math.max(1, Math.min(value, 1024));
-    maxOutputLengthInput.value = value.toString();
-    saveToLocalStorage('maxOutputLength', value.toString());
-  });
-  
+    
   // Save seed when changed
   seedInput.addEventListener('change', () => {
     saveToLocalStorage('seed', seedInput.value);
@@ -1489,7 +1532,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Ensure max turns, max output length, seed, and load conversation button remain disabled
       maxTurnsInput.disabled = true;
-      maxOutputLengthInput.disabled = true;
+      // maxOutputLengthInput no longer exists
       seedInput.disabled = true;
       loadButton.disabled = true;
     }
@@ -1504,9 +1547,8 @@ document.addEventListener('DOMContentLoaded', () => {
       pauseButton.style.display = 'inline-block';
       resumeButton.style.display = 'none';
       
-      // Ensure max turns, max output length, seed, and load conversation button remain disabled
+      // Ensure max turns, seed, and load conversation button remain disabled
       maxTurnsInput.disabled = true;
-      maxOutputLengthInput.disabled = true;
       seedInput.disabled = true;
       loadButton.disabled = true;
     }
@@ -1529,13 +1571,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // Re-enable max turns, max output length, seed fields, load conversation button,
       // and explore mode controls
       maxTurnsInput.disabled = false;
-      maxOutputLengthInput.disabled = false;
+      // maxOutputLengthInput no longer exists
       seedInput.disabled = false;
       loadButton.disabled = false;
       
       // Re-enable all explore mode toggles and number inputs
       const exploreToggles = document.querySelectorAll('[id^="explore-mode-toggle-"]') as NodeListOf<HTMLInputElement>;
       const exploreNumInputs = document.querySelectorAll('[id^="explore-mode-num-requests-"]') as NodeListOf<HTMLInputElement>;
+      const maxTokensInputs = document.querySelectorAll('[id^="max-tokens-"]') as NodeListOf<HTMLInputElement>;
       
       exploreToggles.forEach(toggle => {
         toggle.disabled = false;
@@ -1547,6 +1590,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       
       exploreNumInputs.forEach(input => {
+        input.disabled = false;
+      });
+      
+      // Re-enable all max tokens inputs
+      maxTokensInputs.forEach(input => {
         input.disabled = false;
       });
     }
@@ -1569,13 +1617,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure max turns, max output length, seed, load conversation button,
     // and explore mode controls are enabled
     maxTurnsInput.disabled = false;
-    maxOutputLengthInput.disabled = false;
+    // maxOutputLengthInput no longer exists
     seedInput.disabled = false;
     loadButton.disabled = false;
     
     // Re-enable all explore mode toggles and number inputs
     const exploreToggles = document.querySelectorAll('[id^="explore-mode-toggle-"]') as NodeListOf<HTMLInputElement>;
     const exploreNumInputs = document.querySelectorAll('[id^="explore-mode-num-requests-"]') as NodeListOf<HTMLInputElement>;
+    const maxTokensInputs = document.querySelectorAll('[id^="max-tokens-"]') as NodeListOf<HTMLInputElement>;
     
     exploreToggles.forEach(toggle => {
       toggle.disabled = false;
@@ -1587,6 +1636,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     exploreNumInputs.forEach(input => {
+      input.disabled = false;
+    });
+    
+    // Re-enable all max tokens inputs
+    maxTokensInputs.forEach(input => {
       input.disabled = false;
     });
     
@@ -1742,21 +1796,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get max turns
     const maxTurns = maxTurnsInput.value ? parseInt(maxTurnsInput.value) : Infinity;
     
-    // Get max output length (limited to 1-1024)
-    let maxOutputLength = maxOutputLengthInput.value ? parseInt(maxOutputLengthInput.value) : 512;
-    // Ensure the value is within the valid range
-    maxOutputLength = Math.max(1, Math.min(maxOutputLength, 1024));
+    // Get max tokens for each model
+    const maxTokensPerModel: number[] = [];
+    for (let i = 0; i < models.length; i++) {
+      const maxTokensInput = document.getElementById(`max-tokens-${i}`) as HTMLInputElement;
+      let maxTokens = maxTokensInput.value ? parseInt(maxTokensInput.value) : 512;
+      // Ensure the value is within the valid range
+      maxTokens = Math.max(1, Math.min(maxTokens, 1024));
+      maxTokensPerModel.push(maxTokens);
+    }
     
     // Disable max turns, max output length, seed fields, load conversation button,
     // and explore mode controls when conversation is in the "started" state (even if paused)
     maxTurnsInput.disabled = true;
-    maxOutputLengthInput.disabled = true;
     seedInput.disabled = true;
     loadButton.disabled = true;
     
     // Disable all explore mode toggles and number inputs
     const exploreToggles = document.querySelectorAll('[id^="explore-mode-toggle-"]') as NodeListOf<HTMLInputElement>;
     const exploreNumInputs = document.querySelectorAll('[id^="explore-mode-num-requests-"]') as NodeListOf<HTMLInputElement>;
+    const maxTokensInputs = document.querySelectorAll('[id^="max-tokens-"]') as NodeListOf<HTMLInputElement>;
     
     exploreToggles.forEach(toggle => {
       toggle.disabled = true;
@@ -1768,6 +1827,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     exploreNumInputs.forEach(input => {
+      input.disabled = true;
+    });
+    
+    // Disable all max tokens inputs
+    maxTokensInputs.forEach(input => {
       input.disabled = true;
     });
     
@@ -1853,7 +1917,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contexts,
         apiKeys,
         maxTurns,
-        maxOutputLength,
+        maxTokensPerModel,
         addOutputMessage,
         seed,
         exploreModeSettings,
@@ -1871,7 +1935,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Re-enable max turns, max output length, seed fields and load conversation button
       maxTurnsInput.disabled = false;
-      maxOutputLengthInput.disabled = false;
+      // maxOutputLengthInput no longer exists
       seedInput.disabled = false;
       loadButton.disabled = false;
     } catch (error) {
@@ -1902,7 +1966,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Re-enable max turns, max output length, seed fields and load conversation button
       maxTurnsInput.disabled = false;
-      maxOutputLengthInput.disabled = false;
       seedInput.disabled = false;
       loadButton.disabled = false;
     }

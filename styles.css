@@ -43,8 +43,13 @@ h2 {
 .settings-panel {
   background-color: #EEEEEE;
   border: 1px solid #000000;
-  padding: 15px;
+  padding: 0;
   margin-bottom: 20px;
+}
+
+.settings-panel > .collapsible-content {
+  padding: 15px;
+  max-height: none; /* Remove max-height limitation to ensure all content is visible */
 }
 
 .api-keys, .model-selection, .template-selection, .explore-mode {
@@ -94,6 +99,8 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  margin-top: 10px;
+  margin-bottom: 20px;
 }
 
 .primary-button {
@@ -342,7 +349,16 @@ input:disabled + .toggle-slider:before {
   padding-bottom: 0;
 }
 
-/* Remove animation for API keys, template editor, output settings, and explore mode dropdowns */
+/* Ensure settings panel content is hidden when collapsed */
+.settings-panel.collapsed > .collapsible-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Remove animation for settings panel, API keys, template editor, output settings, and explore mode dropdowns */
+.settings-panel .collapsible-content,
 .api-keys .collapsible-content,
 .template-editor .collapsible-content,
 .output-settings .collapsible-content,
@@ -350,6 +366,7 @@ input:disabled + .toggle-slider:before {
   transition: none;
 }
 
+.settings-panel .collapse-indicator,
 .api-keys .collapse-indicator,
 .template-editor .collapse-indicator,
 .output-settings .collapse-indicator,
@@ -544,9 +561,37 @@ input:disabled + .toggle-slider:before {
   font-style: italic;
 }
 
+.max-tokens-input-group {
+  display: grid;
+  grid-template-columns: max-content auto;
+  align-items: center;
+  margin-bottom: 5px;
+  margin-top: 5px;
+  margin-left: 20px;
+  gap: 10px;
+  border-top: 1px dotted #CCCCCC;
+  padding-top: 5px;
+}
+
+.max-tokens-input-group label {
+  margin-bottom: 0;
+  font-weight: normal;
+  font-size: 13px;
+  color: #555555;
+}
+
+.max-tokens-input-group .max-tokens-input {
+  width: 80px;
+  padding: 3px;
+  border: 1px solid #000000;
+  font-size: 14px;
+  background-color: #FFFFFF;
+  justify-self: start;
+}
+
 .explore-mode-input-group {
   display: grid;
-  grid-template-columns: 200px auto auto;
+  grid-template-columns: max-content auto 1fr;
   align-items: center;
   margin-bottom: 15px;
   margin-top: 5px;
@@ -554,6 +599,7 @@ input:disabled + .toggle-slider:before {
   gap: 10px;
   border-top: 1px dotted #CCCCCC;
   padding-top: 5px;
+  min-height: 30px; /* Ensure stable row height */
 }
 
 .explore-mode-input-group label {
@@ -567,13 +613,33 @@ input:disabled + .toggle-slider:before {
   justify-self: start;
 }
 
-.explore-mode-input-group .num-requests-input {
-  width: 60px;
-  padding: 3px;
-  border: 1px solid #000000;
-  font-size: 14px;
-  background-color: #FFFFFF;
+.num-requests-container {
+  display: flex;
+  align-items: center;
   justify-self: start;
+  min-height: 22px; /* Ensure stable height */
+  visibility: visible; /* Use visibility instead of display for stable layout */
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.num-requests-container.hidden {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.num-requests-container label {
+  white-space: nowrap;
+  margin-right: 5px;
+  font-size: 12px; /* Smaller font for better fit */
+}
+
+.explore-mode-input-group .num-requests-input {
+  width: 40px;
+  padding: 2px 3px;
+  border: 1px solid #000000;
+  font-size: 13px;
+  background-color: #FFFFFF;
 }
 
 /* Explore Mode Output Container */
@@ -600,6 +666,7 @@ input:disabled + .toggle-slider:before {
 .explore-mode-outputs {
   height: 400px; /* Fixed height instead of just max-height */
   overflow-y: auto;
+  padding-bottom: 10px; /* Add padding to prevent bottom line from being cut off */
 }
 
 .explore-output {
@@ -651,8 +718,13 @@ input:disabled + .toggle-slider:before {
 
 /* Mobile-friendly adjustments */
 @media (max-width: 768px) {
+  .max-tokens-input-group {
+    grid-template-columns: max-content auto;
+    gap: 5px;
+  }
+  
   .explore-mode-input-group {
-    grid-template-columns: 150px auto auto;
+    grid-template-columns: max-content auto 1fr;
     gap: 5px;
   }
   
@@ -663,6 +735,7 @@ input:disabled + .toggle-slider:before {
   
   .explore-mode-outputs {
     height: 250px; /* Fixed height for mobile */
+    padding-bottom: 10px; /* Add padding to prevent bottom line from being cut off */
   }
   .template-editor-controls {
     flex-direction: column;
@@ -770,6 +843,26 @@ input:disabled + .toggle-slider:before {
     
     .settings-divider {
       margin: 10px 0;
+    }
+    
+    /* Adjust explore mode layout for very small screens */
+    .explore-mode-input-group {
+      grid-template-columns: max-content auto 1fr;
+      gap: 3px;
+    }
+    
+    .explore-mode-input-group label {
+      font-size: 12px;
+    }
+    
+    .num-requests-container label {
+      font-size: 11px;
+    }
+    
+    .explore-mode-input-group .num-requests-input {
+      width: 40px;
+      padding: 1px 2px;
+      font-size: 12px;
     }
   }
 }
