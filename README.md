@@ -4,6 +4,8 @@ This repo replicates Scott Viteri's ["Universal Backrooms"](https://github.com/s
 
 ## Configuration
 
+As backrooms.directory is a static site, most settings will be saved to your browser's localStorage so that they persist across uses.
+
 ### API Keys
 
 backrooms.directory supports two LLM completion providers: [OpenRouter](https://openrouter.ai/) and [Hyperbolic](https://hyperbolic.xyz/). The original project supported OpenAI and Anthropic as well, but these were removed due to API incompatibilities and frustrating rate limits. However, the Claude and GPT models are available through OpenRouter.
