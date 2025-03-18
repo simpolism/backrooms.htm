@@ -561,16 +561,26 @@ input:disabled + .toggle-slider:before {
   font-style: italic;
 }
 
+/* Container for max-tokens and explore-mode input groups */
+.input-groups-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: 20px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+  border-top: 1px dotted #CCCCCC;
+  padding-top: 5px;
+}
+
 .max-tokens-input-group {
   display: grid;
   grid-template-columns: max-content auto;
   align-items: center;
-  margin-bottom: 5px;
-  margin-top: 5px;
-  margin-left: 20px;
   gap: 10px;
-  border-top: 1px dotted #CCCCCC;
-  padding-top: 5px;
+  margin-right: 20px;
+  flex: 0 0 auto; /* Don't grow or shrink, stay at natural width */
+  min-width: 180px; /* Reduced from 200px */
+  width: auto;
 }
 
 .max-tokens-input-group label {
@@ -578,10 +588,11 @@ input:disabled + .toggle-slider:before {
   font-weight: normal;
   font-size: 13px;
   color: #555555;
+  white-space: nowrap;
 }
 
 .max-tokens-input-group .max-tokens-input {
-  width: 80px;
+  width: 70px; /* Reduced from 80px */
   padding: 3px;
   border: 1px solid #000000;
   font-size: 14px;
@@ -593,12 +604,9 @@ input:disabled + .toggle-slider:before {
   display: grid;
   grid-template-columns: max-content auto 1fr;
   align-items: center;
-  margin-bottom: 15px;
-  margin-top: 5px;
-  margin-left: 20px;
   gap: 10px;
-  border-top: 1px dotted #CCCCCC;
-  padding-top: 5px;
+  flex: 1 1 auto; /* Grow and shrink as needed */
+  min-width: 220px; /* Reduced from 250px */
   min-height: 30px; /* Ensure stable row height */
 }
 
@@ -717,10 +725,16 @@ input:disabled + .toggle-slider:before {
 }
 
 /* Mobile-friendly adjustments */
-@media (max-width: 768px) {
+@media (max-width: 600px) {
+  .input-groups-container {
+    flex-direction: column;
+  }
+  
   .max-tokens-input-group {
     grid-template-columns: max-content auto;
     gap: 5px;
+    margin-right: 0;
+    margin-bottom: 10px;
   }
   
   .explore-mode-input-group {

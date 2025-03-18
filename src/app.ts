@@ -497,6 +497,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentValue = i < currentSelections.length ? currentSelections[i] : null;
         populateModelSelect(select, i, currentValue);
         
+        // Create container for max tokens and explore mode input groups
+        const inputGroupsContainer = document.createElement('div');
+        inputGroupsContainer.className = 'input-groups-container';
+        
         // Create max tokens input group
         const maxTokensGroup = document.createElement('div');
         maxTokensGroup.className = 'max-tokens-input-group';
@@ -532,9 +536,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add elements to max tokens group
         maxTokensGroup.appendChild(maxTokensLabel);
         maxTokensGroup.appendChild(maxTokensInput);
-        
-        // Add max tokens group after the model input group
-        modelInputs.appendChild(maxTokensGroup);
         
         // Create explore mode toggle group
         const exploreGroup = document.createElement('div');
@@ -645,8 +646,12 @@ document.addEventListener('DOMContentLoaded', () => {
         exploreGroup.appendChild(toggleContainer);
         exploreGroup.appendChild(numRequestsContainer);
         
-        // Add explore group after the model input group
-        modelInputs.appendChild(exploreGroup);
+        // Add both groups to the container
+        inputGroupsContainer.appendChild(maxTokensGroup);
+        inputGroupsContainer.appendChild(exploreGroup);
+        
+        // Add the container to the model inputs
+        modelInputs.appendChild(inputGroupsContainer);
       }
       
       // Update explore mode container visibility
