@@ -296,10 +296,10 @@ export class Conversation {
         this.modelDisplayNames[modelIndex] :
         `Model ${modelIndex + 1}`;
       
-      // Always update the explore window
+      // Always update the explore window with cursor
       this.outputCallback(
         `${modelName}`,
-        updatedContent,
+        updatedContent + (isDone ? "" : "█"),
         responseId,
         false
       );
