@@ -154,7 +154,7 @@ select:disabled {
   border: 1px solid #000000;
   background-color: #FFFFFF;
   min-height: 400px;
-  max-height: 600px;
+  max-height: 500px;
   overflow-y: auto;
   padding: 10px;
 }
@@ -751,6 +751,18 @@ input:disabled + .toggle-slider:before {
   .explore-mode-outputs {
     height: 250px; /* Fixed height for mobile */
     padding-bottom: 10px; /* Add padding to prevent bottom line from being cut off */
+  }
+  
+  /* Fix for conversation container on mobile */
+  .conversation-container {
+    margin-top: -1px; /* Pull up the container slightly to ensure border visibility */
+    padding-top: 1px; /* Add a small padding to prevent content from touching the top */
+  }
+  
+  .scroll-spacer {
+    height: 15px; /* Increased height for better visibility during scrolling */
+    width: 100%;
+    min-height: 15px; /* Ensure the spacer doesn't collapse */
   }
   .template-editor-controls {
     flex-direction: column;
