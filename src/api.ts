@@ -178,6 +178,7 @@ export async function hyperbolicCompletionConversation(
     temperature: 1.0,
     max_tokens: maxTokens,
     prompt,
+    stop: ["AI2:", "System:"],
     stream: true // Enable streaming
   };
   
