@@ -1564,131 +1564,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeConversation) {
       activeConversation.stop();
       addOutputMessage('System', 'Conversation stopped by user.');
-      
-      // Update UI
-      isConversationRunning = false;
-      startButton.textContent = 'Start Conversation';
-      startButton.classList.remove('stop');
-      pauseButton.style.display = 'none';
-      resumeButton.style.display = 'none';
-      exportButton.style.display = 'block';
-      
-      // Re-enable max turns, max output length, seed fields, load conversation button,
-      // and explore mode controls
-      maxTurnsInput.disabled = false;
-      // maxOutputLengthInput no longer exists
-      seedInput.disabled = false;
-      loadButton.disabled = false;
-      
-      // Re-enable all explore mode toggles and number inputs
-      const exploreToggles = document.querySelectorAll('[id^="explore-mode-toggle-"]') as NodeListOf<HTMLInputElement>;
-      const exploreNumInputs = document.querySelectorAll('[id^="explore-mode-num-requests-"]') as NodeListOf<HTMLInputElement>;
-      const maxTokensInputs = document.querySelectorAll('[id^="max-tokens-"]') as NodeListOf<HTMLInputElement>;
-      
-      exploreToggles.forEach(toggle => {
-        toggle.disabled = false;
-        // Also remove disabled class from the parent toggle switch container
-        const toggleContainer = toggle.closest('.toggle-switch');
-        if (toggleContainer) {
-          toggleContainer.classList.remove('disabled');
-        }
-      });
-      
-      exploreNumInputs.forEach(input => {
-        input.disabled = false;
-      });
-      
-      // Re-enable all max tokens inputs
-      maxTokensInputs.forEach(input => {
-        input.disabled = false;
-      });
-      
-      // Re-enable model and template dropdowns
-      const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
-      allModelSelects.forEach(select => {
-        select.disabled = false;
-      });
-      templateSelect.disabled = false;
-      
-      // Re-enable template-related buttons
-      const templateButtons = [
-        document.getElementById('edit-current-template') as HTMLButtonElement,
-        document.getElementById('import-template') as HTMLButtonElement,
-        document.getElementById('edit-custom-template') as HTMLButtonElement
-      ];
-      
-      templateButtons.forEach(button => {
-        if (button) {
-          button.disabled = false;
-        }
-      });
     }
   }
   
   // Load conversation from a text file
   function loadConversation(text: string) {
-    // Stop any active conversation
+    // Stop any active conversation (should never happen as button is disabled when started)
     if (activeConversation && isConversationRunning) {
       stopConversation();
     }
-    
-    // Reset UI state
-    isConversationRunning = false;
-    startButton.textContent = 'Start Conversation';
-    startButton.classList.remove('stop');
-    pauseButton.style.display = 'none';
-    resumeButton.style.display = 'none';
-    
-    // Ensure max turns, max output length, seed, load conversation button,
-    // and explore mode controls are enabled
-    maxTurnsInput.disabled = false;
-    // maxOutputLengthInput no longer exists
-    seedInput.disabled = false;
-    loadButton.disabled = false;
-    
-    // Re-enable all explore mode toggles and number inputs
-    const exploreToggles = document.querySelectorAll('[id^="explore-mode-toggle-"]') as NodeListOf<HTMLInputElement>;
-    const exploreNumInputs = document.querySelectorAll('[id^="explore-mode-num-requests-"]') as NodeListOf<HTMLInputElement>;
-    const maxTokensInputs = document.querySelectorAll('[id^="max-tokens-"]') as NodeListOf<HTMLInputElement>;
-    
-    exploreToggles.forEach(toggle => {
-      toggle.disabled = false;
-      // Also remove disabled class from the parent toggle switch container
-      const toggleContainer = toggle.closest('.toggle-switch');
-      if (toggleContainer) {
-        toggleContainer.classList.remove('disabled');
-      }
-    });
-    
-    exploreNumInputs.forEach(input => {
-      input.disabled = false;
-    });
-    
-    // Re-enable all max tokens inputs
-    maxTokensInputs.forEach(input => {
-      input.disabled = false;
-    });
-    
-    // Re-enable model and template dropdowns
-    const allModelSelects = document.querySelectorAll('.model-select') as NodeListOf<HTMLSelectElement>;
-    allModelSelects.forEach(select => {
-      select.disabled = false;
-    });
-    templateSelect.disabled = false;
-    
-    // Re-enable template-related buttons
-    const templateButtons = [
-      document.getElementById('edit-current-template') as HTMLButtonElement,
-      document.getElementById('import-template') as HTMLButtonElement,
-      document.getElementById('edit-custom-template') as HTMLButtonElement
-    ];
-    
-    templateButtons.forEach(button => {
-      if (button) {
-        button.disabled = false;
-      }
-    });
-    
+  
     // Clear existing conversation
     conversationOutput.innerHTML = '';
     
@@ -1990,22 +1875,10 @@ document.addEventListener('DOMContentLoaded', () => {
       
       addOutputMessage('System', `Starting conversation with template "${templateName}"...`);
       await activeConversation.start();
-      // Conversation ended naturally
-      isConversationRunning = false;
-      startButton.textContent = 'Start Conversation';
-      startButton.classList.remove('stop');
-      pauseButton.style.display = 'none';
-      exportButton.style.display = 'block';
-      
-      // Re-enable max turns, max output length, seed fields and load conversation button
-      maxTurnsInput.disabled = false;
-      // maxOutputLengthInput no longer exists
-      seedInput.disabled = false;
-      loadButton.disabled = false;
     } catch (error) {
-      console.error('Error starting conversation:', error);
+      console.error('Conversation error:', error);
       addOutputMessage('System', `Error: ${error instanceof Error ? error.message : String(error)}`);
-      
+    } finally {
       // Reset UI on error
       isConversationRunning = false;
       startButton.textContent = 'Start Conversation';
@@ -2028,7 +1901,31 @@ document.addEventListener('DOMContentLoaded', () => {
         input.disabled = false;
       });
       
-      // Re-enable max turns, max output length, seed fields and load conversation button
+      // Re-enable all max tokens inputs
+      maxTokensInputs.forEach(input => {
+        input.disabled = false;
+      });
+      
+      // Re-enable model and template dropdowns
+      allModelSelects.forEach(select => {
+        select.disabled = false;
+      });
+      templateSelect.disabled = false;
+      
+      // Re-enable template-related buttons
+      const templateButtons = [
+        document.getElementById('edit-current-template') as HTMLButtonElement,
+        document.getElementById('import-template') as HTMLButtonElement,
+        document.getElementById('edit-custom-template') as HTMLButtonElement
+      ];
+      
+      templateButtons.forEach(button => {
+        if (button) {
+          button.disabled = false;
+        }
+      });
+      
+      // Re-enable max turns, seed fields and load conversation button
       maxTurnsInput.disabled = false;
       seedInput.disabled = false;
       loadButton.disabled = false;
