@@ -174,7 +174,7 @@ export async function hyperbolicCompletionConversation(
     temperature: 1.0,
     max_tokens: maxTokens,
     prompt,
-    stop: ["System:", "system:", "user:", "assistant:"],
+    stop: ["System:", "system:", "User:", "Assistant:", "user:", "assistant:"],
     stream: true,
   };
   
