@@ -1,5 +1,55 @@
 import { Message, StreamingCallback } from './types';
 
+// Define an interface for errors that should not be retried
+interface NoRetryError extends Error {
+  noRetry?: boolean;
+}
+
+// Helper function to retry a function with exponential backoff
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 2,
+  initialDelay: number = 500
+): Promise<T> {
+  let retries = 0;
+  let lastError: Error;
+
+  while (retries <= maxRetries) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      
+      // Don't retry if this is an abort error (request was cancelled)
+      // or if the error has the noRetry flag set
+      if (
+        (error instanceof DOMException && error.name === 'AbortError') ||
+        (error as NoRetryError).noRetry === true
+      ) {
+        console.log('Not retrying due to error type or noRetry flag');
+        throw error;
+      }
+      
+      // If we've exhausted our retries, throw the error
+      if (retries === maxRetries) {
+        console.error(`Failed after ${retries + 1} attempts:`, error);
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff (500ms, 1000ms, etc.)
+      const delay = initialDelay * Math.pow(2, retries);
+      console.log(`Attempt ${retries + 1} failed, retrying in ${delay}ms...`);
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, delay));
+      retries++;
+    }
+  }
+
+  // This should never be reached due to the throw in the loop, but TypeScript needs it
+  throw lastError!;
+}
+
 // Helper function to process streaming responses
 async function processStream(
   reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -103,42 +153,67 @@ export async function openrouterConversation(
     requestBody.seed = seed;
   }
 
-  try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openrouterKey}`,
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'backrooms.directory'
-      },
-      body: JSON.stringify(requestBody),
-      signal: abortSignal
-    });
+  // Create a flag to track if we've started receiving a response
+  let hasStartedReceivingResponse = false;
 
-    if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
-    }
+  // Create a wrapper for onChunk that sets the flag when we receive content
+  const onChunkWrapper: StreamingCallback | undefined = onChunk
+    ? (chunk: string, isDone: boolean) => {
+        if (chunk && !isDone) {
+          hasStartedReceivingResponse = true;
+        }
+        onChunk(chunk, isDone);
+      }
+    : undefined;
 
-    // Process the stream
-    if (onChunk && response.body) {
-      const reader = response.body.getReader();
-      return processStream(reader, onChunk);
-    } else {
-      // Fallback to non-streaming for backward compatibility
-      const data = await response.json();
-      return data.choices[0].message.content;
-    }
-  } catch (error) {
-    // Check if this is an abort error (request was cancelled)
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      console.log('OpenRouter API request was cancelled');
-      throw new Error('Request cancelled');
-    } else {
-      console.error('Error calling OpenRouter API:', error);
+  return withRetry(async () => {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openrouterKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'backrooms.directory'
+        },
+        body: JSON.stringify(requestBody),
+        signal: abortSignal
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+      }
+
+      // Process the stream
+      if (onChunkWrapper && response.body) {
+        const reader = response.body.getReader();
+        return processStream(reader, onChunkWrapper);
+      } else {
+        // Fallback to non-streaming for backward compatibility
+        const data = await response.json();
+        hasStartedReceivingResponse = true;
+        return data.choices[0].message.content;
+      }
+    } catch (error) {
+      // Check if this is an abort error (request was cancelled)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('OpenRouter API request was cancelled');
+        throw new Error('Request cancelled');
+      }
+      
+      // If we've already started receiving a response, don't retry
+      if (hasStartedReceivingResponse) {
+        console.error('Error during OpenRouter API streaming (not retrying):', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const noRetryError = new Error(`OpenRouter API error (response already started): ${errorMessage}`);
+        (noRetryError as NoRetryError).noRetry = true;
+        throw noRetryError;
+      }
+      
+      console.error('Error calling OpenRouter API (will retry):', error);
       throw error;
     }
-  }
+  });
 }
 
 export async function hyperbolicCompletionConversation(
@@ -183,78 +258,96 @@ export async function hyperbolicCompletionConversation(
     payload.seed = seed;
   }
 
-  try {
-    const response = await fetch('https://api.hyperbolic.xyz/v1/completions', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-      signal: abortSignal
-    });
+  // Create a flag to track if we've started receiving a response
+  let hasStartedReceivingResponse = false;
 
-    if (!response.ok) {
-      throw new Error(`Hyperbolic Completion API error: ${response.status} ${response.statusText}`);
-    }
+  return withRetry(async () => {
+    try {
+      const response = await fetch('https://api.hyperbolic.xyz/v1/completions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: abortSignal
+      });
 
-    // Process the stream
-    if (onChunk && response.body) {
-      const reader = response.body.getReader();
-      
-      // Create a wrapper for onChunk that buffers chunks and only emits them
-      // when the next non-whitespace chunk is received or when the stream is done.
-      //
-      // Because the hyperbolic LLM is using conversation completions that end when it attempts
-      // to take on a new "character", we will often see trailing newlines. We don't want to amend
-      // the output after it's been emitted via the provided `onChunk`, so instead we buffer the
-      // previous non-whitespace chunk and emit it with stripped newlines if it's the final chunk
-      // in the completion.
-      let bufferedChunk: string | null = null;
-      
-      const onChunkWrapper: StreamingCallback = (chunk: string, isDone: boolean) => {
-        if (isDone) {
-          // If we have a buffered chunk and the stream is done,
-          // emit it after stripping trailing whitespace
-          if (bufferedChunk !== null) {
-            onChunk(bufferedChunk.replace(/\s+$/g, ''), false);
-            bufferedChunk = null;
-          }
-          // Signal completion
-          onChunk('', true);
-          return;
-        }
+      if (!response.ok) {
+        throw new Error(`Hyperbolic Completion API error: ${response.status} ${response.statusText}`);
+      }
+
+      // Process the stream
+      if (onChunk && response.body) {
+        const reader = response.body.getReader();
         
-        // If this chunk has non-whitespace content
-        if (chunk.trim().length > 0) {
-          // If we have a buffered chunk, emit it first
-          if (bufferedChunk !== null) {
-            onChunk(bufferedChunk, false);
-            bufferedChunk = null;
+        // Create a wrapper for onChunk that buffers chunks and only emits them
+        // when the next non-whitespace chunk is received or when the stream is done.
+        //
+        // Because the hyperbolic LLM is using conversation completions that end when it attempts
+        // to take on a new "character", we will often see trailing newlines. We don't want to amend
+        // the output after it's been emitted via the provided `onChunk`, so instead we buffer the
+        // previous non-whitespace chunk and emit it with stripped newlines if it's the final chunk
+        // in the completion.
+        let bufferedChunk: string | null = null;
+        
+        const onChunkWrapper: StreamingCallback = (chunk: string, isDone: boolean) => {
+          if (isDone) {
+            // If we have a buffered chunk and the stream is done,
+            // emit it after stripping trailing whitespace
+            if (bufferedChunk !== null) {
+              onChunk(bufferedChunk.replace(/\s+$/g, ''), false);
+              bufferedChunk = null;
+            }
+            // Signal completion
+            onChunk('', true);
+            return;
           }
           
-          // Buffer this chunk for next time
-          bufferedChunk = chunk;
-        } else if (bufferedChunk !== null) {
-          // This is a whitespace-only chunk, append it to the buffer
-          bufferedChunk += chunk;
-        } else {
-          // This is a whitespace-only chunk and we have no buffer yet
-          bufferedChunk = chunk;
-        }
-      };
+          // If this chunk has non-whitespace content
+          if (chunk.trim().length > 0) {
+            // Mark that we've started receiving a response
+            hasStartedReceivingResponse = true;
+            
+            // If we have a buffered chunk, emit it first
+            if (bufferedChunk !== null) {
+              onChunk(bufferedChunk, false);
+              bufferedChunk = null;
+            }
+            
+            // Buffer this chunk for next time
+            bufferedChunk = chunk;
+          } else if (bufferedChunk !== null) {
+            // This is a whitespace-only chunk, append it to the buffer
+            bufferedChunk += chunk;
+          } else {
+            // This is a whitespace-only chunk and we have no buffer yet
+            bufferedChunk = chunk;
+          }
+        };
+        
+        return processStream(reader, onChunkWrapper);
+      } else {
+        // Fallback to non-streaming for backward compatibility
+        const data = await response.json();
+        hasStartedReceivingResponse = true;
+        return data.choices[0].text.trim();
+      }
+    } catch (error) {
+      // Check if this is an abort error (request was cancelled)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.log('Hyperbolic Completion API request was cancelled');
+        throw new Error('Request cancelled');
+      }
       
-      return processStream(reader, onChunkWrapper);
-    } else {
-      // Fallback to non-streaming for backward compatibility
-      const data = await response.json();
-      return data.choices[0].text.trim();
-    }
-  } catch (error) {
-    // Check if this is an abort error (request was cancelled)
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      console.log('Hyperbolic Completion API request was cancelled');
-      throw new Error('Request cancelled');
-    } else {
-      console.error('Error calling Hyperbolic Completion API:', error);
+      // If we've already started receiving a response, don't retry
+      if (hasStartedReceivingResponse) {
+        console.error('Error during Hyperbolic API streaming (not retrying):', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const noRetryError = new Error(`Hyperbolic API error (response already started): ${errorMessage}`);
+        (noRetryError as NoRetryError).noRetry = true;
+        throw noRetryError;
+      }
+      
+      console.error('Error calling Hyperbolic Completion API (will retry):', error);
       throw error;
     }
-  }
+  });
 }
